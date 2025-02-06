@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1072771865182",
+    "project_id": "glucowise-8079e",
+    "storage_bucket": "glucowise-8079e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1072771865182:android:1d749b7853203f6423f2cf",
+        "android_client_info": {
+          "package_name": "com.example.g21285878naveen"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBFjozeeD6_FHjdrW7pXQvSzBUosXaNT10"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
