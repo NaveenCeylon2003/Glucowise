@@ -36,7 +36,7 @@ class Sugartracking extends StatelessWidget {
       "login": (context) => const Login(),
       "home": (context) => const Homepage(),
       "form": (context) =>  BMICalculatorApp(),
-    
+
     });
   }
 }
