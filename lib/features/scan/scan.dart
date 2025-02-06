@@ -1,23 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:g21285878naveen/features/scan/scan.dart';
+import 'package:g21285878naveen/features/home/home.dart';
+import 'package:g21285878naveen/features/insights/insights.dart';
+import 'package:g21285878naveen/features/profile/profile.dart';
+import 'package:http/http.dart';
 
-class Profileroutes extends StatelessWidget {
-  const Profileroutes({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home:Profilepage(),
-      routes: {
-        "profile": (context) => Profilepage(), // Use Homepage instead of Homescreen
-        "scan": (context) => ScanPage(),
-
-      },
-    );
-  }
-}
-class Profilepage extends StatelessWidget {
-  const Profilepage({super.key});
+class ScanPage extends StatelessWidget {
+  const ScanPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -26,10 +14,11 @@ class Profilepage extends StatelessWidget {
         body: Center(
           child: Column(
             children: [
-              SizedBox(height: 20),
+              Text("Lets get to scanning"),
+              SizedBox(height: 30),
               ElevatedButton(
                 onPressed: () {
-                  Navigator.pushNamed(context, "scan");
+                  ScanPage();
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blueAccent,
@@ -42,8 +31,8 @@ class Profilepage extends StatelessWidget {
                   ),
                 ),
                 child: Text(
-                  "Update account",
-                  style: TextStyle(color: Colors.white,)
+                  "Lets Scan",
+                  style: TextStyle(color: Colors.white),
                 ),
               ),
             ],

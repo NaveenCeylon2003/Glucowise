@@ -4,7 +4,9 @@ import 'package:g21285878naveen/features/auth/getstarted.dart';
 import 'package:g21285878naveen/features/auth/signupform.dart';
 import 'package:g21285878naveen/features/auth/login.dart';
 import 'package:g21285878naveen/features/home/home.dart';
+import 'package:g21285878naveen/features/scan/scan.dart';
 import 'package:g21285878naveen/features/auth/form1.dart';
+
 import 'package:http/http.dart';
 
 void main() async {
@@ -28,7 +30,13 @@ class Sugartracking extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-    );
+    return MaterialApp(initialRoute: "start", routes: {
+      "start": (context) => Start(),
+      "signup": (context) => Signupscreen(),
+      "login": (context) => const Login(),
+      "home": (context) => const Homepage(),
+      "form": (context) =>  BMICalculatorApp(),
+    
+    });
   }
 }
