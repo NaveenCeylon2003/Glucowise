@@ -11,11 +11,11 @@ class ScanPage extends StatefulWidget {
 
 class _ScanPageState extends State<ScanPage> {
   String sugarContent = "Press the button to fetch sugar content";
-
+  final TextEditingController _barcodeController = TextEditingController();
   fetchSugarContent() async {
-    String barcode = "3017624010701";
-    String apiUrl = "https://world.openfoodfacts.org/api/v2/product/$barcode.json";
+    String barcode = _barcodeController.text.trim();
 
+    String apiUrl = "https://world.openfoodfacts.org/api/v2/product/$barcode.json";
     try {
       var response = await http.get(Uri.parse(apiUrl));
 
@@ -48,23 +48,36 @@ class _ScanPageState extends State<ScanPage> {
     return Scaffold(
       appBar: AppBar(title: const Text("Scan Page")),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(sugarContent, textAlign: TextAlign.center, style: const TextStyle(fontSize: 18)),
-            const SizedBox(height: 30),
-            ElevatedButton(
-              onPressed: fetchSugarContent,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blueAccent,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+        child: Container(
+          width: 300,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(sugarContent, textAlign: TextAlign.center, style: const TextStyle(fontSize: 18)),
+              const SizedBox(height: 30),
+              TextField(
+                controller: _barcodeController,
+                decoration: InputDecoration(
+                  labelText: "Enter barcode to Scan",
+                  prefixIcon: Icon(Icons.bar_chart_outlined),
+                  border: OutlineInputBorder(),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                keyboardType: TextInputType.number
               ),
-              child: const Text("Fetch Sugar Content", style: TextStyle(color: Colors.white)),
-            ),
-          ],
+              const SizedBox(height: 30),
+              ElevatedButton(
+                onPressed: fetchSugarContent,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueAccent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                ),
+                child: const Text("Fetch Sugar Content", style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          ),
         ),
       ),
     );

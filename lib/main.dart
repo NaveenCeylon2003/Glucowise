@@ -4,8 +4,10 @@ import 'package:g21285878naveen/features/auth/getstarted.dart';
 import 'package:g21285878naveen/features/auth/signupform.dart';
 import 'package:g21285878naveen/features/auth/login.dart';
 import 'package:g21285878naveen/features/home/home.dart';
-import 'package:g21285878naveen/features/scan/scan.dart';
+//import 'package:g21285878naveen/features/scan/scan.dart';
+import 'package:g21285878naveen/features/scan/options.dart';
 import 'package:g21285878naveen/features/auth/form1.dart';
+import 'package:g21285878naveen/features/scan/scan.dart';
 
 import 'package:http/http.dart';
 
@@ -35,8 +37,9 @@ class Sugartracking extends StatelessWidget {
       "signup": (context) => Signupscreen(),
       "login": (context) => const Login(),
       "home": (context) => const Homepage(),
-      "form": (context) =>  BMICalculatorApp(),
-
+      "form": (context) => BMICalculatorApp(),
+      "options": (context) => Scanoptions(),
+      "scan": (context) => ScanPage()
     });
   }
 }
