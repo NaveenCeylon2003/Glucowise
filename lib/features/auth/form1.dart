@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:g21285878naveen/features/home/home.dart';
+import 'package:g21285878naveen/features/auth/signupform.dart';
 
 void main() {
   runApp(BMICalculatorApp());
@@ -11,7 +11,7 @@ class BMICalculatorApp extends StatelessWidget {
     return MaterialApp(
       initialRoute: "bmi",
       routes: {
-        "home":(context)=> Homepage()
+        "signup":(context)=> Signupscreen()
       },
       title: 'BMI Calculator',
       theme: ThemeData(
@@ -34,15 +34,42 @@ class _BMICalculatorScreenState extends State<BMICalculatorScreen> {
   String _bmiCategory = '';
 
   void _calculateBMI() {
-    double height =
-        double.parse(_heightController.text) / 100; // Convert cm to meters
-    double weight = double.parse(_weightController.text);
+    String heightText = _heightController.text.trim();
+    String weightText = _weightController.text.trim();
+
+    // Validate input
+    if (heightText.isEmpty || weightText.isEmpty) {
+      _showSnackBar("Please enter both height and weight.");
+      return;
+    }
+
+    double? height = double.tryParse(heightText);
+    double? weight = double.tryParse(weightText);
+
+    if (height == null || weight == null || height <= 0 || weight <= 0) {
+      _showSnackBar("Invalid input. Height and weight must be positive numbers.");
+      return;
+    }
+
+    // Convert cm to meters safely using the '!' operator, since we've validated it's not null
+    double heightInMeters = height / 100;
 
     setState(() {
-      _bmiResult = weight / (height * height);
+      _bmiResult = weight / (heightInMeters * heightInMeters);
       _bmiCategory = _getBMICategory(_bmiResult);
     });
   }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
 
   String _getBMICategory(double bmi) {
     if (bmi < 18.5) {
@@ -86,7 +113,7 @@ class _BMICalculatorScreenState extends State<BMICalculatorScreen> {
                     ),
                     keyboardType: TextInputType.number,
                   ),
-                  SizedBox(height: 24.0),
+                  SizedBox(height: 20.0),
                   ElevatedButton(
                     onPressed: _calculateBMI,
                     child: Text('Calculate BMI'),
@@ -101,7 +128,7 @@ class _BMICalculatorScreenState extends State<BMICalculatorScreen> {
                       ),
                     ),
                   ),
-                  SizedBox(height: 24.0),
+                  SizedBox(height: 20.0),
                   Text(
                     'BMI: ${_bmiResult.toStringAsFixed(2)}',
                     style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
@@ -114,7 +141,10 @@ class _BMICalculatorScreenState extends State<BMICalculatorScreen> {
                   SizedBox(height: 20),
                   ElevatedButton(
                     onPressed: () {
-                      Navigator.pushNamed(context,"home");
+                      if (_bmiResult > 0) {
+                        //_showSnackBar(_getBMICategory(_bmiResult));
+                        Navigator.pushNamed(context, "signup");
+                      }
                     },
                     child: Text("Let's start tracking"),
                     style: ElevatedButton.styleFrom(
@@ -128,6 +158,7 @@ class _BMICalculatorScreenState extends State<BMICalculatorScreen> {
                       ),
                     ),
                   ),
+
                 ],
               ),
             ),

@@ -27,7 +27,7 @@ class Signupscreen extends StatelessWidget {
             content: Text('Verification email sent. Please check your email.'),
           ),
         );
-        Navigator.pushNamed(context, "form");
+        Navigator.pushNamed(context, "home");
       }
     } on FirebaseAuthException catch (e) {
       // Print the exact error code and message
