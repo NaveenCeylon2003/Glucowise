@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:g21285878naveen/features/auth/getstarted.dart';
 import 'package:g21285878naveen/features/auth/signupform.dart';
 import 'package:g21285878naveen/features/auth/login.dart';
+import 'package:g21285878naveen/features/auth/splash.dart';
 import 'package:g21285878naveen/features/home/home.dart';
 //import 'package:g21285878naveen/features/scan/scan.dart';
 import 'package:g21285878naveen/features/scan/options.dart';
@@ -32,10 +33,11 @@ class Sugartracking extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(initialRoute: "start", routes: {
+    return MaterialApp(initialRoute: "splash", routes: {
+      "splash": (Context) => SplashScreen(),
       "start": (context) => Start(),
       "signup": (context) => Signupscreen(),
-      "login": (context) => const Login(),
+      "login": (context) => Login(),
       "home": (context) => const Homepage(),
       "form": (context) => BMICalculatorApp(),
       "options": (context) => Scanoptions(),
