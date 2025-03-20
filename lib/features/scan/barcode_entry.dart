@@ -1,25 +1,25 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 
-class ScanPage extends StatefulWidget {
-  const ScanPage({super.key});
+class BarcodeEntryPage extends StatefulWidget {
+  const BarcodeEntryPage({super.key});
 
   @override
-  State<ScanPage> createState() => _ScanPageState();
+  _BarcodeEntryPageState createState() => _BarcodeEntryPageState();
 }
 
-class _ScanPageState extends State<ScanPage> {
-  String _sugarContent = "Press the button to scan a barcode";
+class _BarcodeEntryPageState extends State<BarcodeEntryPage> {
+  String _sugarContent = "Enter a barcode to fetch sugar content";
   String _foodName = "Unknown Product";
+  final TextEditingController _barcodeController = TextEditingController();
   bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Scan Barcode")),
+      appBar: AppBar(title: const Text("Manual Barcode Entry")),
       body: Center(
         child: Container(
           width: 300,
@@ -39,29 +39,30 @@ class _ScanPageState extends State<ScanPage> {
                       fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               const SizedBox(height: 30),
+              TextField(
+                controller: _barcodeController,
+                decoration: const InputDecoration(
+                  labelText: "Enter Barcode",
+                  prefixIcon: Icon(Icons.bar_chart_outlined),
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 30),
               _isLoading
                   ? const CircularProgressIndicator()
                   : ElevatedButton(
                       onPressed: () async {
                         setState(() {
                           _isLoading = true;
-                          _sugarContent = "Scanning...";
+                          _sugarContent = "Fetching data...";
                         });
 
                         try {
-                          // Scan barcode
-                          String barcode =
-                              await FlutterBarcodeScanner.scanBarcode(
-                            "#ff6666", // Overlay color
-                            "Cancel", // Cancel button text
-                            true, // Show flash icon
-                            ScanMode.BARCODE,
-                          );
-
-                          if (barcode == "-1") {
-                            // Scan cancelled
+                          String barcode = _barcodeController.text.trim();
+                          if (barcode.isEmpty) {
                             setState(() {
-                              _sugarContent = "Scan cancelled.";
+                              _sugarContent = "Please enter a barcode.";
                               _isLoading = false;
                             });
                             return;
@@ -130,7 +131,6 @@ class _ScanPageState extends State<ScanPage> {
                           setState(() {
                             _sugarContent = "Error: $e";
                           });
-                          debugPrint("Error details: $e"); // Log for debugging
                         } finally {
                           setState(() {
                             _isLoading = false;
@@ -146,7 +146,7 @@ class _ScanPageState extends State<ScanPage> {
                             horizontal: 40, vertical: 15),
                       ),
                       child: const Text(
-                        "Scan Barcode",
+                        "Fetch Sugar Content",
                         style: TextStyle(color: Colors.white),
                       ),
                     ),
@@ -155,5 +155,11 @@ class _ScanPageState extends State<ScanPage> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _barcodeController.dispose();
+    super.dispose();
   }
 }

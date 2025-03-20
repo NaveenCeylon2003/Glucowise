@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:g21285878naveen/features/insights/insights.dart';
 import 'package:g21285878naveen/features/profile/profile.dart';
 import '../scan/scan.dart';
+import '../scan/options.dart';
 
 class Homeroutes extends StatelessWidget {
   const Homeroutes({super.key});
@@ -12,7 +13,7 @@ class Homeroutes extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       home: Homescreen(), // No need for initialRoute
       routes: {
-        "scan": (context) => ScanPage(),
+        "options": (context) => Scanoptions(),
       },
     );
   }
@@ -41,7 +42,7 @@ class Homescreen extends StatelessWidget {
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
-                Navigator.pushNamed(context, "scan");
+                Navigator.pushNamed(context, "options");
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blueAccent,

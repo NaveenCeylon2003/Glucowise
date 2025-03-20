@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:g21285878naveen/features/scan/scan.dart';
+import 'package:g21285878naveen/features/scan/barcode_entry.dart'; // Import the new page
 
 void main() {
   runApp(const Scanroutes());
@@ -15,7 +16,8 @@ class Scanroutes extends StatelessWidget {
       initialRoute: "options",
       routes: {
         "options": (context) => const Scanoptions(),
-        "scan": (context) => const ScanPage(), // Ensure this exists
+        "scan": (context) => const ScanPage(), // Fixed: Added const
+        "barcode": (context) => const BarcodeEntryPage(), // Fixed: Added const
       },
     );
   }
@@ -30,21 +32,15 @@ class Scanoptions extends StatefulWidget {
 
 class _ScanoptionsState extends State<Scanoptions> {
   String _selectedMethod = "Barcode Entry";
-
   final List<String> _scanMethods = ["Barcode Entry", "Photo Scanner"];
 
   void _navigateBasedOnSelection() {
-    if (!mounted) return; // Ensures the widget is still active
+    if (!mounted) return;
 
     if (_selectedMethod == "Barcode Entry") {
-      Navigator.of(context).pushNamed("scan"); // Alternative navigator syntax
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Photo Scanner is still under development."),
-          duration: Duration(seconds: 2),
-        ),
-      );
+      Navigator.of(context).pushNamed("barcode");
+    } else if (_selectedMethod == "Photo Scanner") {
+      Navigator.of(context).pushNamed("scan"); // For testing barcode scanner later
     }
   }
 
@@ -90,7 +86,10 @@ class _ScanoptionsState extends State<Scanoptions> {
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
               ),
-              child: const Text("Fetch Sugar Content", style: TextStyle(color: Colors.white)),
+              child: const Text(
+                "Proceed",
+                style: TextStyle(color: Colors.white),
+              ),
             ),
           ],
         ),

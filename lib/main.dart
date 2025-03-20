@@ -9,21 +9,32 @@ import 'package:g21285878naveen/features/home/home.dart';
 import 'package:g21285878naveen/features/scan/options.dart';
 import 'package:g21285878naveen/features/auth/form1.dart';
 import 'package:g21285878naveen/features/scan/scan.dart';
-
+import 'package:g21285878naveen/features/scan/options.dart';
+import 'package:g21285878naveen/features/scan/barcode_entry.dart';
+import 'package:openfoodfacts/openfoodfacts.dart';
 import 'package:http/http.dart';
 
 void main() async {
-  WidgetsFlutterBinding
-      .ensureInitialized(); // Ensure Flutter binding is initialized
-  await Firebase.initializeApp(
-    options: const FirebaseOptions(
-      apiKey: "AIzaSyDlz1L168Mdsw9qV8EMxetet9rkqLeGQ5c",
-      authDomain: "glucowise-8079e.firebaseapp.com",
-      projectId: "glucowise-8079e",
-      storageBucket: "glucowise-8079e.appspot.com", // Corrected storageBucket
-      messagingSenderId: "1072771865182",
-      appId: "1:1072771865182:web:0e37dcb54597122523f2cf",
-    ),
+  // Set the user-agent before any API calls
+  OpenFoodAPIConfiguration.userAgent = UserAgent(
+    name: 'GlucoWise',
+    version: '1.0.0',
+  );
+
+  OpenFoodAPIConfiguration.globalLanguages = <OpenFoodFactsLanguage>[
+    OpenFoodFactsLanguage.ENGLISH,
+  ];
+  OpenFoodAPIConfiguration.globalCountry = OpenFoodFactsCountry.SRI_LANKA;
+  // Rest of your main function
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: const FirebaseOptions(
+    apiKey: "AIzaSyDlz1L168Mdsw9qV8EMxetet9rkqLeGQ5c",
+    authDomain: "glucowise-8079e.firebaseapp.com",
+    projectId: "glucowise-8079e",
+    storageBucket: "glucowise-8079e.appspot.com", // Corrected storageBucket
+    messagingSenderId: "1072771865182",
+    appId: "1:1072771865182:web:0e37dcb54597122523f2cf",
+  )
   );
   runApp(const Sugartracking());
 }
@@ -41,7 +52,8 @@ class Sugartracking extends StatelessWidget {
       "home": (context) => const Homepage(),
       "form": (context) => BMICalculatorApp(),
       "options": (context) => Scanoptions(),
-      "scan": (context) => ScanPage()
+      "scan": (context) => ScanPage(),
+      "barcode": (context) => BarcodeEntryPage()
     });
   }
 }
