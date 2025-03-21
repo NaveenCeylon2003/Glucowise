@@ -12,6 +12,7 @@ import 'package:g21285878naveen/features/scan/scan.dart';
 import 'package:g21285878naveen/features/scan/options.dart';
 import 'package:g21285878naveen/features/scan/barcode_entry.dart';
 import 'package:openfoodfacts/openfoodfacts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart';
 
 void main() async {
