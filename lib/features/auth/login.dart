@@ -99,6 +99,10 @@ class _LoginState extends State<Login> {
     }
   }
 
+  void _navigateToSignup() {
+    Navigator.pushNamed(context, "signup"); // Navigate to signup screen
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -165,6 +169,27 @@ class _LoginState extends State<Login> {
                   "Login",
                   style: TextStyle(color: Colors.white),
                 ),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    "Don't have an account? ",
+                    style: TextStyle(fontSize: 14),
+                  ),
+                  TextButton(
+                    onPressed: _navigateToSignup,
+                    child: const Text(
+                      "Register",
+                      style: TextStyle(
+                        color: Colors.blueAccent,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
