@@ -1,4 +1,3 @@
-// insights.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -13,34 +12,107 @@ class Insights extends StatefulWidget {
 
 class _InsightsState extends State<Insights> {
   List<Map<String, dynamic>> dailySummaries = [];
+  Map<String, List<Map<String, dynamic>>> dailySearchedFoods = {};
+  Map<String, List<Map<String, dynamic>>> dailyScannedBarcodes = {};
   bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadDailySummaries();
+    _loadData();
   }
 
-  Future<void> _loadDailySummaries() async {
+  Future<void> _loadData() async {
     setState(() => isLoading = true);
     User? user = FirebaseAuth.instance.currentUser;
 
     if (user != null) {
-      QuerySnapshot snapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .collection('daily_summaries')
-          .orderBy('timestamp', descending: true)
-          .limit(7) // Last 7 days
-          .get();
+      try {
+        // Load daily summaries (last 7 days)
+        QuerySnapshot summarySnapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .collection('daily_summaries')
+            .orderBy('timestamp', descending: true)
+            .limit(7)
+            .get();
 
+        // Load searched foods (last 7 days)
+        QuerySnapshot searchedSnapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .collection('searched_foods')
+            .orderBy('timestamp', descending: true)
+            .limit(50) // Adjust limit as needed
+            .get();
+
+        // Load scanned barcodes (last 7 days)
+        QuerySnapshot scannedSnapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .collection('scanned_barcodes')
+            .orderBy('timestamp', descending: true)
+            .limit(50) // Adjust limit as needed
+            .get();
+
+        setState(() {
+          // Process daily summaries
+          dailySummaries = summarySnapshot.docs.map((doc) {
+            var data = doc.data() as Map<String, dynamic>;
+            data['totalSugar'] = (data['totalSugar'] as num?)?.toDouble() ?? 0.0;
+            data['excessOrDeficit'] = (data['excessOrDeficit'] as num?)?.toDouble() ?? 0.0;
+            data['limit'] = (data['limit'] as num?)?.toDouble() ?? 0.0;
+            return data;
+          }).toList();
+
+          // Process searched foods by day
+          dailySearchedFoods = _groupByDay(searchedSnapshot.docs);
+
+          // Process scanned barcodes by day
+          dailyScannedBarcodes = _groupByDay(scannedSnapshot.docs);
+
+          isLoading = false;
+        });
+      } catch (e) {
+        print("Error loading data: $e");
+        setState(() {
+          dailySummaries = [];
+          dailySearchedFoods = {};
+          dailyScannedBarcodes = {};
+          isLoading = false;
+        });
+      }
+    } else {
       setState(() {
-        dailySummaries = snapshot.docs
-            .map((doc) => doc.data() as Map<String, dynamic>)
-            .toList();
+        dailySummaries = [];
+        dailySearchedFoods = {};
+        dailyScannedBarcodes = {};
         isLoading = false;
       });
     }
+  }
+
+  // Helper to group items by day
+  Map<String, List<Map<String, dynamic>>> _groupByDay(List<QueryDocumentSnapshot> docs) {
+    Map<String, List<Map<String, dynamic>>> grouped = {};
+    DateTime now = DateTime.now();
+    DateTime sevenDaysAgo = now.subtract(const Duration(days: 7));
+
+    for (var doc in docs) {
+      var data = doc.data() as Map<String, dynamic>;
+      Timestamp? timestamp = data['timestamp'] as Timestamp?;
+      if (timestamp == null) continue;
+
+      DateTime dateTime = timestamp.toDate();
+      if (dateTime.isBefore(sevenDaysAgo)) continue; // Skip if older than 7 days
+
+      String date = dateTime.toString().split(' ')[0]; // YYYY-MM-DD
+      data['sugarConsumed'] = (data['sugarConsumed'] as num?)?.toDouble() ?? 0.0;
+
+      grouped[date] = grouped[date] ?? [];
+      grouped[date]!.add(data);
+    }
+    return grouped;
   }
 
   @override
@@ -70,21 +142,23 @@ class _InsightsState extends State<Insights> {
                     alignment: BarChartAlignment.spaceAround,
                     maxY: dailySummaries.isNotEmpty
                         ? dailySummaries
-                        .map((e) => (e['totalSugar'] as num).toDouble())
-                        .reduce((a, b) => a > b ? a : b) * 1.2
-                        : 100,
-                    barGroups: dailySummaries.reversed
-                        .map((summary) => BarChartGroupData(
-                      x: dailySummaries.length - dailySummaries.indexOf(summary) - 1,
-                      barRods: [
-                        BarChartRodData(
-                          toY: (summary['totalSugar'] as num).toDouble(),
-                          color: Colors.blue,
-                          width: 15,
-                        ),
-                      ],
-                    ))
-                        .toList(),
+                        .map((e) => e['totalSugar'] as double)
+                        .reduce((a, b) => a > b ? a : b) *
+                        1.2
+                        : 100.0,
+                    barGroups: dailySummaries.reversed.map((summary) {
+                      int index = dailySummaries.length - dailySummaries.indexOf(summary) - 1;
+                      return BarChartGroupData(
+                        x: index,
+                        barRods: [
+                          BarChartRodData(
+                            toY: summary['totalSugar'] as double,
+                            color: Colors.purple,
+                            width: 15,
+                          ),
+                        ],
+                      );
+                    }).toList(),
                     titlesData: FlTitlesData(
                       bottomTitles: AxisTitles(
                         sideTitles: SideTitles(
@@ -92,8 +166,8 @@ class _InsightsState extends State<Insights> {
                           getTitlesWidget: (value, meta) {
                             int index = value.toInt();
                             if (index >= 0 && index < dailySummaries.length) {
-                              String date = dailySummaries[dailySummaries.length - 1 - index]['date'];
-                              return Text(date.split('-').last); // Show day only
+                              String date = dailySummaries[dailySummaries.length - 1 - index]['date'] as String;
+                              return Text(date.split('-').last); // Day only
                             }
                             return const Text('');
                           },
@@ -142,20 +216,18 @@ class _InsightsState extends State<Insights> {
                       children: [
                         Padding(
                           padding: const EdgeInsets.all(8.0),
-                          child: Text(summary['date']),
+                          child: Text(summary['date'] as String),
                         ),
                         Padding(
                           padding: const EdgeInsets.all(8.0),
-                          child: Text((summary['totalSugar'] as num).toStringAsFixed(1)),
+                          child: Text((summary['totalSugar'] as double).toStringAsFixed(1)),
                         ),
                         Padding(
                           padding: const EdgeInsets.all(8.0),
                           child: Text(
-                            (summary['excessOrDeficit'] as num).toStringAsFixed(1),
+                            (summary['excessOrDeficit'] as double).toStringAsFixed(1),
                             style: TextStyle(
-                              color: (summary['excessOrDeficit'] as num) > 0
-                                  ? Colors.red
-                                  : Colors.green,
+                              color: (summary['excessOrDeficit'] as double) > 0 ? Colors.red : Colors.green,
                             ),
                           ),
                         ),
@@ -164,10 +236,65 @@ class _InsightsState extends State<Insights> {
                   ),
                 ],
               ),
+              const SizedBox(height: 30),
+              const Text(
+                'Searched Foods (Last 7 Days)',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              _buildFoodHistoryList(dailySearchedFoods),
+              const SizedBox(height: 30),
+              const Text(
+                'Scanned Barcodes (Last 7 Days)',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              _buildFoodHistoryList(dailyScannedBarcodes),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  // Helper to build history list for searched foods or scanned barcodes
+  Widget _buildFoodHistoryList(Map<String, List<Map<String, dynamic>>> dailyItems) {
+    if (dailyItems.isEmpty) {
+      return const Text("No items recorded in the last 7 days.");
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: dailyItems.entries.map((entry) {
+        String date = entry.key;
+        List<Map<String, dynamic>> items = entry.value;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              date,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 5),
+            ...items.map((item) {
+              String name = item['foodName'] as String? ?? item['productName'] as String? ?? 'Unknown Item';
+              double sugar = item['sugarConsumed'] as double;
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(child: Text(name)),
+                    Text("${sugar.toStringAsFixed(1)} g"),
+                  ],
+                ),
+              );
+            }),
+            const SizedBox(height: 15),
+          ],
+        );
+      }).toList(),
     );
   }
 }

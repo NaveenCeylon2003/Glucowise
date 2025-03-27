@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:g21285878naveen/features/insights/insights.dart';
 import 'package:g21285878naveen/features/profile/profile.dart';
 import 'package:g21285878naveen/features/profile/update_account.dart';
 import 'package:g21285878naveen/features/profile/change_email.dart';
 import 'package:g21285878naveen/features/profile/logout.dart';
-import 'package:g21285878naveen/features/profile/notification_settings.dart';
 import 'package:g21285878naveen/features/profile/sugar_limit.dart';
 import 'package:g21285878naveen/features/scan/scan.dart';
 import 'package:g21285878naveen/features/scan/options.dart';
@@ -12,6 +12,7 @@ import 'package:g21285878naveen/features/scan/barcode_entry.dart';
 import 'package:g21285878naveen/features/scan/food_search.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Homeroutes extends StatelessWidget {
   const Homeroutes({super.key});
@@ -28,16 +29,14 @@ class Homescreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     HomepageState? homepageState = context.findAncestorStateOfType<HomepageState>();
-    if (homepageState?.isLoading ?? true) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
     double totalSugar = homepageState?.totalScannedSugar ?? 0.0;
     double dailyLimit = homepageState?.dailySugarLimit ?? 0.0;
     double remainingSugar = dailyLimit - totalSugar;
     double progress = dailyLimit > 0 ? totalSugar / dailyLimit : 0.0;
     if (progress > 1.0) progress = 1.0;
     if (progress < 0.0) progress = 0.0;
+
+    print("Homescreen build - Daily Limit: $dailyLimit, Total Sugar: $totalSugar, Remaining: $remainingSugar, Progress: $progress");
 
     return Center(
       child: Column(
@@ -59,7 +58,9 @@ class Homescreen extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           Text(
-            "Daily Sugar Allowance: ${remainingSugar >= 0 ? remainingSugar.toStringAsFixed(1) : 0.0} g / ${dailyLimit.toStringAsFixed(1)} g",
+            dailyLimit == 0.0 && totalSugar == 0.0
+                ? "Set a sugar limit to track your intake"
+                : "Daily Sugar Allowance: ${remainingSugar >= 0 ? remainingSugar.toStringAsFixed(1) : 0.0} g / ${dailyLimit.toStringAsFixed(1)} g",
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 10),
@@ -88,9 +89,9 @@ class Homepage extends StatefulWidget {
 
 class HomepageState extends State<Homepage> {
   int myIndex = 0;
-  double? dailySugarLimit;
-  double totalScannedSugar = 0.0;
-  bool isLoading = true;
+  double dailySugarLimit = 0.0; // Non-null default
+  double totalScannedSugar = 0.0; // Non-null default
+  StreamSubscription<DocumentSnapshot>? _summarySubscription;
 
   List<Widget> widgetList = [
     const Homeroutes(),              // 0: Home
@@ -102,77 +103,108 @@ class HomepageState extends State<Homepage> {
     const UpdateAccountScreen(),   // 6: Update Account
     const ChangeEmailScreen(),     // 7: Change Email
     const LogoutScreen(),          // 8: Logout
-    const NotificationSettingsScreen(), // 9: Notification Settings
-    const FoodSearchPage(),         // 10: Food Search Page
-    const SugarLimitPage(),         // 11: Sugar Limit Page (New)
+    const FoodSearchPage(),         // 9: Food Search Page
+    const SugarLimitPage(),         // 10: Sugar Limit Page
   ];
 
   @override
   void initState() {
     super.initState();
-    _loadSugarData();
-    _saveDailySummary();
+    _loadCachedData(); // Load cached data immediately
+    _listenToSugarData(); // Start real-time listener
   }
 
-  Future<void> _loadSugarData() async {
-    setState(() => isLoading = true);
+  @override
+  void dispose() {
+    _summarySubscription?.cancel(); // Clean up listener
+    super.dispose();
+  }
+
+  Future<void> _loadCachedData() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      dailySugarLimit = prefs.getDouble('dailySugarLimit') ?? 0.0;
+      totalScannedSugar = prefs.getDouble('totalScannedSugar') ?? 0.0;
+      print("Loaded from cache - Daily Limit: $dailySugarLimit, Total Sugar: $totalScannedSugar");
+    });
+  }
+
+  Future<void> _saveCachedData() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('dailySugarLimit', dailySugarLimit);
+    await prefs.setDouble('totalScannedSugar', totalScannedSugar);
+    print("Saved to cache - Daily Limit: $dailySugarLimit, Total Sugar: $totalScannedSugar");
+  }
+
+  void _listenToSugarData() {
     User? user = FirebaseAuth.instance.currentUser;
-
-    if (user != null) {
-      try {
-        DocumentSnapshot userDoc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .get();
-
-        setState(() {
-          dailySugarLimit = (userDoc['sugarLimit'] as num?)?.toDouble() ??
-              (userDoc['recommendedSugarIntake'] as num?)?.toDouble() ??
-              0.0;
-        });
-
-        QuerySnapshot barcodeDocs = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .collection('scanned_barcodes')
-            .get();
-
-        QuerySnapshot searchDocs = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .collection('searched_foods')
-            .get();
-
-        double total = 0.0;
-        for (var doc in barcodeDocs.docs) {
-          final sugar = doc['sugarContent'];
-          if (sugar != null && sugar is num) total += sugar.toDouble();
-        }
-        for (var doc in searchDocs.docs) {
-          final sugar = doc['sugarContent'];
-          if (sugar != null && sugar is num) total += sugar.toDouble();
-        }
-        setState(() => totalScannedSugar = total);
-      } catch (e) {
-        print("Error fetching data: $e");
-        setState(() {
-          dailySugarLimit = 0.0;
-          totalScannedSugar = 0.0;
-        });
-      }
+    if (user == null) {
+      print("No user logged in, using defaults");
+      setState(() {
+        dailySugarLimit = 0.0;
+        totalScannedSugar = 0.0;
+      });
+      _saveCachedData();
+      return;
     }
-    setState(() => isLoading = false);
+
+    // Fetch sugar limit once (assuming it doesn't change often)
+    FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get()
+        .then((userDoc) {
+      double limit = (userDoc['sugarLimit'] as num?)?.toDouble() ??
+          (userDoc['recommendedSugarIntake'] as num?)?.toDouble() ??
+          0.0;
+      setState(() {
+        dailySugarLimit = limit;
+        print("Loaded sugar limit from Firestore: $dailySugarLimit");
+      });
+      _saveCachedData();
+    }).catchError((e) {
+      print("Error fetching sugar limit: $e");
+    });
+
+    // Real-time listener for daily_summaries
+    String today = DateTime.now().toString().split(' ')[0];
+    _summarySubscription = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('daily_summaries')
+        .doc(today)
+        .snapshots()
+        .listen((snapshot) {
+      if (snapshot.exists) {
+        double total = (snapshot['totalSugar'] as num?)?.toDouble() ?? 0.0;
+        setState(() {
+          totalScannedSugar = total;
+          print("Real-time update - Total Sugar: $totalScannedSugar");
+        });
+        _saveCachedData();
+      } else {
+        setState(() {
+          totalScannedSugar = 0.0;
+          print("No summary for $today, reset Total Sugar to 0");
+        });
+        _saveCachedData();
+      }
+    }, onError: (e) {
+      print("Error in real-time listener: $e");
+      // Keep cached value if listener fails
+    });
   }
 
   Future<void> refreshSugarData() async {
-    await _loadSugarData();
+    // No need for manual refresh with real-time listener, but keep for compatibility
+    _listenToSugarData();
   }
 
   Future<void> _saveDailySummary() async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user != null && dailySugarLimit != null) {
       String date = DateTime.now().toString().split(' ')[0];
-      double excessOrDeficit = totalScannedSugar - dailySugarLimit!;
+      double excessOrDeficit = totalScannedSugar - dailySugarLimit;
 
       await FirebaseFirestore.instance
           .collection('users')
@@ -192,9 +224,7 @@ class HomepageState extends State<Homepage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : IndexedStack(index: myIndex, children: widgetList),
+      body: IndexedStack(index: myIndex, children: widgetList),
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: Colors.purple,
         currentIndex: myIndex > 2 ? 0 : myIndex,
@@ -204,11 +234,12 @@ class HomepageState extends State<Homepage> {
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
         onTap: (index) {
-          setState(() => myIndex = index);
-          if (index == 0 || index == 2) {
-            _loadSugarData();
-            _saveDailySummary();
-          }
+          setState(() {
+            myIndex = index;
+            if (index == 0 || index == 2) {
+              _listenToSugarData(); // Re-establish listener if needed
+            }
+          });
         },
       ),
     );

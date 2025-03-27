@@ -46,7 +46,7 @@ class _BarcodeEntryPageState extends State<BarcodeEntryPage> {
     await prefs.setString(barcode, jsonEncode(data));
   }
 
-  // Save barcode data to Firestore
+  // Save barcode data to Firestore with real-time daily summary update
   Future<void> _saveToFirestore(String barcode, String foodName, double? sugarPer100g, double? sugarConsumed, double? amountConsumed) async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -57,11 +57,15 @@ class _BarcodeEntryPageState extends State<BarcodeEntryPage> {
     }
 
     try {
+      String docId = "${barcode}_${DateTime.now().millisecondsSinceEpoch}";
+      String today = DateTime.now().toString().split(' ')[0];
+
+      // Save individual barcode entry
       await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
           .collection('scanned_barcodes')
-          .doc("${barcode}_${DateTime.now().millisecondsSinceEpoch}") // Unique doc ID with timestamp
+          .doc(docId)
           .set({
         'barcode': barcode,
         'foodName': foodName,
@@ -70,10 +74,135 @@ class _BarcodeEntryPageState extends State<BarcodeEntryPage> {
         'amountConsumed': amountConsumed,
         'timestamp': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
+
+      // Increment total sugar in daily_summaries
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('daily_summaries')
+          .doc(today)
+          .set({
+        'date': today,
+        'totalSugar': FieldValue.increment(sugarConsumed ?? 0.0),
+        'timestamp': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      // No need to manually refresh Homepage, as it uses a real-time listener
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error saving to Firestore: $e")),
       );
+    }
+  }
+
+  Future<void> _searchBarcode() async {
+    String barcode = _barcodeController.text.trim();
+    String amountText = _amountConsumedController.text.trim();
+
+    if (barcode.isEmpty) {
+      setState(() {
+        _sugarContent = "Please enter a barcode.";
+        _isLoading = false;
+      });
+      return;
+    }
+
+    if (amountText.isEmpty) {
+      setState(() {
+        _sugarContent = "Please enter the amount consumed.";
+        _isLoading = false;
+      });
+      return;
+    }
+
+    double? amountConsumed = double.tryParse(amountText);
+    if (amountConsumed == null || amountConsumed <= 0) {
+      setState(() {
+        _sugarContent = "Please enter a valid positive amount.";
+        _isLoading = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _sugarContent = "Fetching data...";
+    });
+
+    try {
+      var connectivityResult = await Connectivity().checkConnectivity();
+      if (connectivityResult != ConnectivityResult.none) {
+        // Fetch fresh data from API if network is available
+        String apiUrl = "https://world.openfoodfacts.org/api/v2/product/$barcode.json";
+        var response = await http.get(Uri.parse(apiUrl));
+
+        if (response.statusCode == 200) {
+          var data = jsonDecode(response.body);
+
+          if (data["status"] == 1) {
+            _foodName = data["product"]["product_name"] ?? "Unknown Product";
+            double? sugarPer100g = data["product"]["nutriments"]["sugars_100g"]?.toDouble();
+
+            double? sugarConsumed;
+            if (sugarPer100g != null) {
+              sugarConsumed = (sugarPer100g / 100) * amountConsumed;
+            }
+
+            setState(() {
+              _sugarContent = sugarConsumed != null
+                  ? "Sugar consumed: ${sugarConsumed.toStringAsFixed(1)} g\n(Sugar per 100g: $sugarPer100g g)"
+                  : "Sugar data not available for $_foodName";
+            });
+
+            await _saveToSharedPreferences(barcode, _foodName, sugarPer100g);
+            await _saveToFirestore(barcode, _foodName, sugarPer100g, sugarConsumed, amountConsumed);
+          } else {
+            setState(() {
+              _sugarContent = "Product not found in database.";
+            });
+          }
+        } else if (response.statusCode == 429) {
+          setState(() {
+            _sugarContent = "Rate limit exceeded. Please wait and try again.";
+          });
+        } else {
+          setState(() {
+            _sugarContent = "Error: Failed to fetch data (Status: ${response.statusCode})";
+          });
+        }
+      } else {
+        // Fallback to cached data only if no network is available
+        final cachedData = await _getCachedBarcodeData(barcode);
+        if (cachedData != null) {
+          setState(() {
+            _foodName = cachedData['foodName'] as String;
+            final sugarPer100g = cachedData['sugarPer100g'] as double?;
+            if (sugarPer100g != null) {
+              final sugarConsumed = (sugarPer100g / 100) * amountConsumed;
+              _sugarContent = "Sugar consumed: ${sugarConsumed.toStringAsFixed(1)} g (cached)\n(Sugar per 100g: $sugarPer100g g)";
+            } else {
+              _sugarContent = "Sugar data not available for $_foodName (cached)";
+            }
+            _isLoading = false;
+          });
+          final sugarPer100g = cachedData['sugarPer100g'] as double?;
+          final sugarConsumed = sugarPer100g != null ? (sugarPer100g / 100) * amountConsumed : null;
+          await _saveToFirestore(barcode, _foodName, sugarPer100g, sugarConsumed, amountConsumed);
+        } else {
+          setState(() {
+            _sugarContent = "No network connection and no cached data available.";
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      setState(() {
+        _sugarContent = "Error: $e";
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -122,120 +251,7 @@ class _BarcodeEntryPageState extends State<BarcodeEntryPage> {
               _isLoading
                   ? const CircularProgressIndicator()
                   : ElevatedButton(
-                onPressed: () async {
-                  setState(() {
-                    _isLoading = true;
-                    _sugarContent = "Fetching data...";
-                  });
-
-                  try {
-                    String barcode = _barcodeController.text.trim();
-                    String amountText = _amountConsumedController.text.trim();
-
-                    if (barcode.isEmpty) {
-                      setState(() {
-                        _sugarContent = "Please enter a barcode.";
-                        _isLoading = false;
-                      });
-                      return;
-                    }
-
-                    if (amountText.isEmpty) {
-                      setState(() {
-                        _sugarContent = "Please enter the amount consumed.";
-                        _isLoading = false;
-                      });
-                      return;
-                    }
-
-                    double? amountConsumed = double.tryParse(amountText);
-                    if (amountConsumed == null || amountConsumed <= 0) {
-                      setState(() {
-                        _sugarContent = "Please enter a valid positive amount.";
-                        _isLoading = false;
-                      });
-                      return;
-                    }
-
-                    // Check local cache first
-                    final cachedData = await _getCachedBarcodeData(barcode);
-                    if (cachedData != null) {
-                      setState(() {
-                        _foodName = cachedData['foodName'] as String;
-                        final sugarPer100g = cachedData['sugarPer100g'] as double?;
-                        if (sugarPer100g != null) {
-                          final sugarConsumed = (sugarPer100g / 100) * amountConsumed;
-                          _sugarContent = "Sugar consumed: ${sugarConsumed.toStringAsFixed(1)} g (cached)\n(Sugar per 100g: $sugarPer100g g)";
-                        } else {
-                          _sugarContent = "Sugar data not available for $_foodName (cached)";
-                        }
-                        _isLoading = false;
-                      });
-                      // Save to Firestore even when using cached data
-                      final sugarPer100g = cachedData['sugarPer100g'] as double?;
-                      final sugarConsumed = sugarPer100g != null ? (sugarPer100g / 100) * amountConsumed : null;
-                      await _saveToFirestore(barcode, _foodName, sugarPer100g, sugarConsumed, amountConsumed);
-                      return;
-                    }
-
-                    // Check connectivity for internet fetch
-                    var connectivityResult = await Connectivity().checkConnectivity();
-                    if (connectivityResult == ConnectivityResult.none) {
-                      setState(() {
-                        _sugarContent = "No network connection. Please try again.";
-                        _isLoading = false;
-                      });
-                      return;
-                    }
-
-                    // Fetch from OpenFoodFacts API
-                    String apiUrl = "https://world.openfoodfacts.org/api/v2/product/$barcode.json";
-                    var response = await http.get(Uri.parse(apiUrl));
-
-                    if (response.statusCode == 200) {
-                      var data = jsonDecode(response.body);
-
-                      if (data["status"] == 1) {
-                        _foodName = data["product"]["product_name"] ?? "Unknown Product";
-                        double? sugarPer100g = data["product"]["nutriments"]["sugars_100g"];
-
-                        setState(() {
-                          if (sugarPer100g != null) {
-                            final sugarConsumed = (sugarPer100g / 100) * amountConsumed;
-                            _sugarContent = "Sugar consumed: ${sugarConsumed.toStringAsFixed(1)} g\n(Sugar per 100g: $sugarPer100g g)";
-                          } else {
-                            _sugarContent = "Sugar data not available for $_foodName";
-                          }
-                        });
-
-                        // Calculate sugar consumed and save
-                        double? sugarConsumed = sugarPer100g != null ? (sugarPer100g / 100) * amountConsumed : null;
-                        await _saveToSharedPreferences(barcode, _foodName, sugarPer100g);
-                        await _saveToFirestore(barcode, _foodName, sugarPer100g, sugarConsumed, amountConsumed);
-                      } else {
-                        setState(() {
-                          _sugarContent = "Product not found in database.";
-                        });
-                      }
-                    } else if (response.statusCode == 429) {
-                      setState(() {
-                        _sugarContent = "Rate limit exceeded. Please wait and try again.";
-                      });
-                    } else {
-                      setState(() {
-                        _sugarContent = "Error: Failed to fetch data (Status: ${response.statusCode})";
-                      });
-                    }
-                  } catch (e) {
-                    setState(() {
-                      _sugarContent = "Error: $e";
-                    });
-                  } finally {
-                    setState(() {
-                      _isLoading = false;
-                    });
-                  }
-                },
+                onPressed: _searchBarcode,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blueAccent,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -250,9 +266,9 @@ class _BarcodeEntryPageState extends State<BarcodeEntryPage> {
               ElevatedButton(
                 onPressed: () {
                   HomepageState? homepageState = context.findAncestorStateOfType<HomepageState>();
-                  homepageState?.setState(() {
-                    homepageState.myIndex = 0; // Back to Homescreen
-                  });
+                  if (homepageState != null) {
+                    homepageState.setState(() => homepageState.myIndex = 0); // Back to Homescreen
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.grey,

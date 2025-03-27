@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class TDEECalculatorScreen extends StatefulWidget {
+  const TDEECalculatorScreen({super.key}); // Added const constructor
+
   @override
   _TDEECalculatorScreenState createState() => _TDEECalculatorScreenState();
 }
@@ -15,7 +17,6 @@ class _TDEECalculatorScreenState extends State<TDEECalculatorScreen> {
   String _activityLevel = 'Sedentary';
   double _tdeeResult = 0.0;
   double _sugarRecommendation = 0.0;
-  bool _showLoginButton = false; // Flag to show the login button after email verification
 
   final Map<String, double> _activityMultipliers = {
     'Sedentary': 1.2,
@@ -25,7 +26,7 @@ class _TDEECalculatorScreenState extends State<TDEECalculatorScreen> {
     'Extra Active': 1.9,
   };
 
-  void _calculateTDEEAndSugar() async {
+  Future<void> _calculateTDEEAndSugar() async {
     String heightText = _heightController.text.trim();
     String weightText = _weightController.text.trim();
     String ageText = _ageController.text.trim();
@@ -44,12 +45,9 @@ class _TDEECalculatorScreenState extends State<TDEECalculatorScreen> {
       return;
     }
 
-    double bmr;
-    if (_gender == 'Male') {
-      bmr = 10 * weight + 6.25 * height - 5 * age + 5;
-    } else {
-      bmr = 10 * weight + 6.25 * height - 5 * age - 161;
-    }
+    double bmr = _gender == 'Male'
+        ? 10 * weight + 6.25 * height - 5 * age + 5
+        : 10 * weight + 6.25 * height - 5 * age - 161;
 
     double activityMultiplier = _activityMultipliers[_activityLevel]!;
     double tdee = bmr * activityMultiplier;
@@ -61,7 +59,6 @@ class _TDEECalculatorScreenState extends State<TDEECalculatorScreen> {
       _sugarRecommendation = sugarGrams;
     });
 
-    // Save to Firestore and send email verification
     User? user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       try {
@@ -75,20 +72,21 @@ class _TDEECalculatorScreenState extends State<TDEECalculatorScreen> {
           'recommendedSugarIntake': sugarGrams,
           'timestamp': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
+        _showSnackBar("Data saved successfully.");
 
-        // Send email verification after TDEE calculation
-        await user.sendEmailVerification();
-        _showSnackBar("Verification email sent. Please check your email.");
+        try {
+          await user.sendEmailVerification();
+          _showSnackBar("Verification email sent. Please check your email.");
+        } catch (emailError) {
+          _showSnackBar("Failed to send verification email: $emailError");
+        }
 
-        // Show the login button instead of navigating directly
-        setState(() {
-          _showLoginButton = true;
-        });
+        Navigator.pushReplacementNamed(context, "home");
       } catch (e) {
-        _showSnackBar("Error saving data or sending email: $e");
+        _showSnackBar("Error saving data: $e");
       }
     } else {
-      _showSnackBar("No user logged in. Please sign up again.");
+      _showSnackBar("No user logged in. Please sign in.");
     }
   }
 
@@ -97,16 +95,25 @@ class _TDEECalculatorScreenState extends State<TDEECalculatorScreen> {
       SnackBar(
         content: Text(message),
         backgroundColor: message.contains("Error") ? Colors.red : Colors.green,
-        duration: Duration(seconds: 2),
+        duration: const Duration(seconds: 2),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _heightController.dispose();
+    _weightController.dispose();
+    _ageController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('TDEE & Sugar Calculator'),
+        title: const Text('TDEE & Sugar Calculator'),
+        backgroundColor: Colors.blueAccent,
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -118,89 +125,80 @@ class _TDEECalculatorScreenState extends State<TDEECalculatorScreen> {
                 children: [
                   TextField(
                     controller: _heightController,
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       labelText: 'Height (cm)',
                       hintText: 'Enter your height in centimeters',
+                      border: OutlineInputBorder(),
                     ),
                     keyboardType: TextInputType.number,
                   ),
-                  SizedBox(height: 16.0),
+                  const SizedBox(height: 16.0),
                   TextField(
                     controller: _weightController,
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       labelText: 'Weight (kg)',
                       hintText: 'Enter your weight in kilograms',
+                      border: OutlineInputBorder(),
                     ),
                     keyboardType: TextInputType.number,
                   ),
-                  SizedBox(height: 16.0),
+                  const SizedBox(height: 16.0),
                   TextField(
                     controller: _ageController,
-                    decoration: InputDecoration(
+                    decoration: const InputDecoration(
                       labelText: 'Age (years)',
                       hintText: 'Enter your age',
+                      border: OutlineInputBorder(),
                     ),
                     keyboardType: TextInputType.number,
                   ),
-                  SizedBox(height: 16.0),
+                  const SizedBox(height: 16.0),
                   DropdownButtonFormField<String>(
                     value: _gender,
-                    decoration: InputDecoration(labelText: 'Gender'),
+                    decoration: const InputDecoration(
+                      labelText: 'Gender',
+                      border: OutlineInputBorder(),
+                    ),
                     items: ['Male', 'Female']
                         .map((gender) => DropdownMenuItem(value: gender, child: Text(gender)))
                         .toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _gender = value!;
-                      });
-                    },
+                    onChanged: (value) => setState(() => _gender = value!),
                   ),
-                  SizedBox(height: 16.0),
+                  const SizedBox(height: 16.0),
                   DropdownButtonFormField<String>(
                     value: _activityLevel,
-                    decoration: InputDecoration(labelText: 'Activity Level'),
+                    decoration: const InputDecoration(
+                      labelText: 'Activity Level',
+                      border: OutlineInputBorder(),
+                    ),
                     items: _activityMultipliers.keys
                         .map((level) => DropdownMenuItem(value: level, child: Text(level)))
                         .toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _activityLevel = value!;
-                      });
-                    },
+                    onChanged: (value) => setState(() => _activityLevel = value!),
                   ),
-                  SizedBox(height: 20.0),
+                  const SizedBox(height: 20.0),
                   ElevatedButton(
                     onPressed: _calculateTDEEAndSugar,
-                    child: Text('Calculate TDEE & Sugar'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blueAccent,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                    ),
+                    child: const Text(
+                      'Calculate TDEE & Sugar',
+                      style: TextStyle(color: Colors.white),
                     ),
                   ),
-                  SizedBox(height: 20.0),
+                  const SizedBox(height: 20.0),
                   Text(
                     'TDEE: ${_tdeeResult.toStringAsFixed(0)} kcal',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
-                  SizedBox(height: 8.0),
+                  const SizedBox(height: 8.0),
                   Text(
                     'Recommended Sugar: ${_sugarRecommendation.toStringAsFixed(1)} g',
-                    style: TextStyle(fontSize: 18),
+                    style: const TextStyle(fontSize: 18),
                   ),
-                  SizedBox(height: 20.0),
-                  if (_showLoginButton) // Show button only after email verification
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.pushReplacementNamed(context, "login");
-                      },
-                      child: Text('Go to Login'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blueAccent,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                      ),
-                    ),
                 ],
               ),
             ),
@@ -211,10 +209,11 @@ class _TDEECalculatorScreenState extends State<TDEECalculatorScreen> {
   }
 }
 
-// Wrapper for routing purposes
 class BMICalculatorApp extends StatelessWidget {
+  const BMICalculatorApp({super.key}); // Added const constructor
+
   @override
   Widget build(BuildContext context) {
-    return TDEECalculatorScreen();
+    return const TDEECalculatorScreen();
   }
 }

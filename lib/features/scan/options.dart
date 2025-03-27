@@ -27,7 +27,7 @@ class _ScanoptionsState extends State<Scanoptions> {
         });
       } else if (_selectedMethod == "Search by Name") {
         homepageState.setState(() {
-          homepageState.myIndex = 10; // Navigate to FoodSearchPage
+          homepageState.myIndex = 9; // Navigate to FoodSearchPage
         });
       }
     });
