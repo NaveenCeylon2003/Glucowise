@@ -28,7 +28,6 @@ class _InsightsState extends State<Insights> {
 
     if (user != null) {
       try {
-        // Load daily summaries (last 7 days)
         QuerySnapshot summarySnapshot = await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
@@ -37,26 +36,23 @@ class _InsightsState extends State<Insights> {
             .limit(7)
             .get();
 
-        // Load searched foods (last 7 days)
         QuerySnapshot searchedSnapshot = await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
             .collection('searched_foods')
             .orderBy('timestamp', descending: true)
-            .limit(50) // Adjust limit as needed
+            .limit(50)
             .get();
 
-        // Load scanned barcodes (last 7 days)
         QuerySnapshot scannedSnapshot = await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
             .collection('scanned_barcodes')
             .orderBy('timestamp', descending: true)
-            .limit(50) // Adjust limit as needed
+            .limit(50)
             .get();
 
         setState(() {
-          // Process daily summaries
           dailySummaries = summarySnapshot.docs.map((doc) {
             var data = doc.data() as Map<String, dynamic>;
             data['totalSugar'] = (data['totalSugar'] as num?)?.toDouble() ?? 0.0;
@@ -65,10 +61,7 @@ class _InsightsState extends State<Insights> {
             return data;
           }).toList();
 
-          // Process searched foods by day
           dailySearchedFoods = _groupByDay(searchedSnapshot.docs);
-
-          // Process scanned barcodes by day
           dailyScannedBarcodes = _groupByDay(scannedSnapshot.docs);
 
           isLoading = false;
@@ -92,7 +85,6 @@ class _InsightsState extends State<Insights> {
     }
   }
 
-  // Helper to group items by day
   Map<String, List<Map<String, dynamic>>> _groupByDay(List<QueryDocumentSnapshot> docs) {
     Map<String, List<Map<String, dynamic>>> grouped = {};
     DateTime now = DateTime.now();
@@ -104,9 +96,9 @@ class _InsightsState extends State<Insights> {
       if (timestamp == null) continue;
 
       DateTime dateTime = timestamp.toDate();
-      if (dateTime.isBefore(sevenDaysAgo)) continue; // Skip if older than 7 days
+      if (dateTime.isBefore(sevenDaysAgo)) continue;
 
-      String date = dateTime.toString().split(' ')[0]; // YYYY-MM-DD
+      String date = dateTime.toString().split(' ')[0];
       data['sugarConsumed'] = (data['sugarConsumed'] as num?)?.toDouble() ?? 0.0;
 
       grouped[date] = grouped[date] ?? [];
@@ -119,182 +111,280 @@ class _InsightsState extends State<Insights> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Insights'),
-        backgroundColor: Colors.blue,
+        title: const Text('Insights', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.purple,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadData,
+            tooltip: 'Refresh Data',
+          ),
+        ],
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Weekly Sugar Intake',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                height: 300,
-                child: BarChart(
-                  BarChartData(
-                    alignment: BarChartAlignment.spaceAround,
-                    maxY: dailySummaries.isNotEmpty
-                        ? dailySummaries
-                        .map((e) => e['totalSugar'] as double)
-                        .reduce((a, b) => a > b ? a : b) *
-                        1.2
-                        : 100.0,
-                    barGroups: dailySummaries.reversed.map((summary) {
-                      int index = dailySummaries.length - dailySummaries.indexOf(summary) - 1;
-                      return BarChartGroupData(
-                        x: index,
-                        barRods: [
-                          BarChartRodData(
-                            toY: summary['totalSugar'] as double,
-                            color: Colors.purple,
-                            width: 15,
-                          ),
-                        ],
-                      );
-                    }).toList(),
-                    titlesData: FlTitlesData(
-                      bottomTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          getTitlesWidget: (value, meta) {
-                            int index = value.toInt();
-                            if (index >= 0 && index < dailySummaries.length) {
-                              String date = dailySummaries[dailySummaries.length - 1 - index]['date'] as String;
-                              return Text(date.split('-').last); // Day only
-                            }
-                            return const Text('');
-                          },
-                        ),
-                      ),
-                      leftTitles: AxisTitles(
-                        sideTitles: SideTitles(showTitles: true, reservedSize: 40),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 30),
-              const Text(
-                'Daily Summary Table',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 10),
-              Table(
-                border: TableBorder.all(),
-                columnWidths: const {
-                  0: FlexColumnWidth(2),
-                  1: FlexColumnWidth(2),
-                  2: FlexColumnWidth(2),
-                },
-                children: [
-                  const TableRow(
-                    decoration: BoxDecoration(color: Colors.grey),
-                    children: [
-                      Padding(
-                        padding: EdgeInsets.all(8.0),
-                        child: Text('Date', style: TextStyle(fontWeight: FontWeight.bold)),
-                      ),
-                      Padding(
-                        padding: EdgeInsets.all(8.0),
-                        child: Text('Intake (g)', style: TextStyle(fontWeight: FontWeight.bold)),
-                      ),
-                      Padding(
-                        padding: EdgeInsets.all(8.0),
-                        child: Text('Excess/Deficit (g)', style: TextStyle(fontWeight: FontWeight.bold)),
-                      ),
-                    ],
-                  ),
-                  ...dailySummaries.map(
-                        (summary) => TableRow(
+          : RefreshIndicator(
+        onRefresh: _loadData,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Card(
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(summary['date'] as String),
+                        const Text(
+                          'Weekly Sugar Intake',
+                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.purple),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text((summary['totalSugar'] as double).toStringAsFixed(1)),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            (summary['excessOrDeficit'] as double).toStringAsFixed(1),
-                            style: TextStyle(
-                              color: (summary['excessOrDeficit'] as double) > 0 ? Colors.red : Colors.green,
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          height: 250,
+                          child: BarChart(
+                            BarChartData(
+                              alignment: BarChartAlignment.spaceAround,
+                              maxY: dailySummaries.isNotEmpty
+                                  ? dailySummaries
+                                  .map((e) => e['totalSugar'] as double)
+                                  .reduce((a, b) => a > b ? a : b) *
+                                  1.2
+                                  : 100.0,
+                              barGroups: dailySummaries.reversed.map((summary) {
+                                int index = dailySummaries.length - dailySummaries.indexOf(summary) - 1;
+                                double sugar = summary['totalSugar'] as double;
+                                return BarChartGroupData(
+                                  x: index,
+                                  barRods: [
+                                    BarChartRodData(
+                                      toY: sugar,
+                                      gradient: LinearGradient(
+                                        colors: sugar > (summary['limit'] as double)
+                                            ? [Colors.redAccent, Colors.red]
+                                            : [Colors.purple, Colors.purpleAccent],
+                                        begin: Alignment.bottomCenter,
+                                        end: Alignment.topCenter,
+                                      ),
+                                      width: 18,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                  ],
+                                  showingTooltipIndicators: [0],
+                                );
+                              }).toList(),
+                              titlesData: FlTitlesData(
+                                bottomTitles: AxisTitles(
+                                  sideTitles: SideTitles(
+                                    showTitles: true,
+                                    getTitlesWidget: (value, meta) {
+                                      int index = value.toInt();
+                                      if (index >= 0 && index < dailySummaries.length) {
+                                        String date = dailySummaries[dailySummaries.length - 1 - index]['date'] as String;
+                                        return Padding(
+                                          padding: const EdgeInsets.only(top: 8.0),
+                                          child: Text(
+                                            date.split('-').last,
+                                            style: const TextStyle(fontSize: 12),
+                                          ),
+                                        );
+                                      }
+                                      return const Text('');
+                                    },
+                                  ),
+                                ),
+                                leftTitles: AxisTitles(
+                                  sideTitles: SideTitles(
+                                    showTitles: true,
+                                    reservedSize: 40,
+                                    getTitlesWidget: (value, meta) => Text(
+                                      '${value.toInt()} g',
+                                      style: const TextStyle(fontSize: 12),
+                                    ),
+                                  ),
+                                ),
+                                topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                                rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                              ),
+                              gridData: FlGridData(
+                                drawHorizontalLine: true, // Fixed: Replaced 'showHorizontal' with 'drawHorizontalLine'
+                                horizontalInterval: 20,
+                              ),
+                              borderData: FlBorderData(show: false),
+                              barTouchData: BarTouchData(
+                                enabled: true,
+                                touchTooltipData: BarTouchTooltipData(
+                                  getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                                    int dayIndex = dailySummaries.length - 1 - group.x;
+                                    return BarTooltipItem(
+                                      '${dailySummaries[dayIndex]['date']}\n${rod.toY.toStringAsFixed(1)} g',
+                                      const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                    );
+                                  },
+                                ),
+                              ),
                             ),
                           ),
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 30),
-              const Text(
-                'Searched Foods (Last 7 Days)',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 10),
-              _buildFoodHistoryList(dailySearchedFoods),
-              const SizedBox(height: 30),
-              const Text(
-                'Scanned Barcodes (Last 7 Days)',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 10),
-              _buildFoodHistoryList(dailyScannedBarcodes),
-            ],
+                ),
+                const SizedBox(height: 20),
+                Card(
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Daily Summary (Last 7 Days)',
+                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.purple),
+                        ),
+                        const SizedBox(height: 10),
+                        Table(
+                          border: TableBorder.all(color: Colors.grey[300]!),
+                          columnWidths: const {
+                            0: FlexColumnWidth(2),
+                            1: FlexColumnWidth(2),
+                            2: FlexColumnWidth(2),
+                          },
+                          children: [
+                            TableRow(
+                              decoration: BoxDecoration(color: Colors.grey[200]),
+                              children: const [
+                                Padding(
+                                  padding: EdgeInsets.all(8.0),
+                                  child: Text('Date', style: TextStyle(fontWeight: FontWeight.bold)),
+                                ),
+                                Padding(
+                                  padding: EdgeInsets.all(8.0),
+                                  child: Text('Intake (g)', style: TextStyle(fontWeight: FontWeight.bold)),
+                                ),
+                                Padding(
+                                  padding: EdgeInsets.all(8.0),
+                                  child: Text('Excess/Deficit', style: TextStyle(fontWeight: FontWeight.bold)),
+                                ),
+                              ],
+                            ),
+                            ...dailySummaries.map(
+                                  (summary) => TableRow(
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Text(summary['date'] as String),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Text((summary['totalSugar'] as double).toStringAsFixed(1)),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Text(
+                                      (summary['excessOrDeficit'] as double).toStringAsFixed(1),
+                                      style: TextStyle(
+                                        color: (summary['excessOrDeficit'] as double) > 0 ? Colors.redAccent : Colors.green,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                _buildHistorySection('Searched Foods (Last 7 Days)', dailySearchedFoods, Icons.search),
+                const SizedBox(height: 20),
+                _buildHistorySection('Scanned Barcodes (Last 7 Days)', dailyScannedBarcodes, Icons.qr_code),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  // Helper to build history list for searched foods or scanned barcodes
-  Widget _buildFoodHistoryList(Map<String, List<Map<String, dynamic>>> dailyItems) {
-    if (dailyItems.isEmpty) {
-      return const Text("No items recorded in the last 7 days.");
-    }
+  Widget _buildHistorySection(String title, Map<String, List<Map<String, dynamic>>> dailyItems, IconData icon) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ExpansionTile(
+        leading: Icon(icon, color: Colors.purple),
+        title: Text(
+          title,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.purple),
+        ),
+        tilePadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: dailyItems.isEmpty
+                ? const Text("No items recorded in the last 7 days.", style: TextStyle(color: Colors.grey))
+                : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: dailyItems.entries.map((entry) {
+                String date = entry.key;
+                List<Map<String, dynamic>> items = entry.value;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: dailyItems.entries.map((entry) {
-        String date = entry.key;
-        List<Map<String, dynamic>> items = entry.value;
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              date,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 5),
-            ...items.map((item) {
-              String name = item['foodName'] as String? ?? item['productName'] as String? ?? 'Unknown Item';
-              double sugar = item['sugarConsumed'] as double;
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(child: Text(name)),
-                    Text("${sugar.toStringAsFixed(1)} g"),
+                    Text(
+                      date,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+                    ),
+                    const SizedBox(height: 8),
+                    ...items.map((item) {
+                      String name = item['foodName'] as String? ?? item['productName'] as String? ?? 'Unknown Item';
+                      double sugar = item['sugarConsumed'] as double;
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                name,
+                                style: const TextStyle(fontSize: 14),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                              decoration: BoxDecoration(
+                                color: Colors.purple.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                "${sugar.toStringAsFixed(1)} g",
+                                style: const TextStyle(fontSize: 14, color: Colors.purple, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                    const Divider(),
                   ],
-                ),
-              );
-            }),
-            const SizedBox(height: 15),
-          ],
-        );
-      }).toList(),
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

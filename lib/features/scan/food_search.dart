@@ -48,9 +48,7 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
   Future<void> _saveToFirestore(String key, String foodName, double? sugarPer100g, double? sugarConsumed, double? amountConsumed) async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please log in to save food data.")),
-      );
+      _showSnackBar("Please log in to save food data.");
       return;
     }
 
@@ -58,7 +56,6 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
       String docId = "${key.toLowerCase()}_${DateTime.now().millisecondsSinceEpoch}";
       String today = DateTime.now().toString().split(' ')[0];
 
-      // Save individual search entry
       await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -73,7 +70,6 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
         'timestamp': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
-      // Increment total sugar in daily_summaries
       await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -84,14 +80,11 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
         'date': today,
         'timestamp': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
-
-      // Listener in Homepage will handle excessOrDeficit
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error saving to Firestore: $e")),
-      );
+      _showSnackBar("Error saving to Firestore: $e", Colors.red);
     }
   }
+
   Future<void> _searchProduct() async {
     String foodQuery = _searchController.text.trim();
     String amountText = _amountConsumedController.text.trim();
@@ -129,7 +122,6 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
     try {
       var connectivityResult = await Connectivity().checkConnectivity();
       if (connectivityResult != ConnectivityResult.none) {
-        // Fetch fresh data from API if network is available
         String apiUrl =
             "https://world.openfoodfacts.org/cgi/search.pl?search_terms=${Uri.encodeComponent(foodQuery)}&fields=code,product_name,nutriments&json=1";
         var response = await http.get(Uri.parse(apiUrl));
@@ -153,6 +145,7 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
 
             await _saveToSharedPreferences(foodQuery, _foodName, sugarPer100g, sugarConsumed, amountConsumed);
             await _saveToFirestore(foodQuery, _foodName, sugarPer100g, sugarConsumed, amountConsumed);
+            _showSnackBar("Food data saved successfully!", Colors.green);
           } else {
             setState(() {
               _sugarContent = "No products found for '$foodQuery'.";
@@ -164,7 +157,6 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
           });
         }
       } else {
-        // Fallback to cached data only if no network is available
         final cachedData = await _getCachedFoodData(foodQuery);
         if (cachedData != null) {
           setState(() {
@@ -176,105 +168,190 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
             } else {
               _sugarContent = "Sugar data not available for $_foodName (cached)";
             }
-            _isLoading = false;
           });
           final sugarPer100g = cachedData['sugarPer100g'] as double?;
           final sugarConsumed = sugarPer100g != null ? (sugarPer100g / 100) * amountConsumed : null;
           await _saveToFirestore(foodQuery, _foodName, sugarPer100g, sugarConsumed, amountConsumed);
-          return;
+          _showSnackBar("Loaded cached data.", Colors.green);
         } else {
           setState(() {
             _sugarContent = "No network connection and no cached data available.";
-            _isLoading = false;
           });
-          return;
         }
       }
     } catch (e) {
       setState(() {
         _sugarContent = "Error: $e";
       });
+      _showSnackBar("Error fetching data: $e", Colors.red);
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
     }
+  }
+
+  void _showSnackBar(String message, [Color? backgroundColor]) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: backgroundColor ?? Colors.grey,
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: SingleChildScrollView(
-        child: Container(
-          width: 300,
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                _sugarContent,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 18),
-              ),
-              const SizedBox(height: 20),
-              if (_foodName != "Unknown Product")
-                Text(
-                  "Product: $_foodName",
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              const SizedBox(height: 30),
-              TextField(
-                controller: _searchController,
-                decoration: const InputDecoration(
-                  labelText: "Enter Food Name",
-                  prefixIcon: Icon(Icons.search),
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.text,
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: _amountConsumedController,
-                decoration: const InputDecoration(
-                  labelText: "Amount Consumed (g)",
-                  prefixIcon: Icon(Icons.fastfood),
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 20),
-              _isLoading
-                  ? const CircularProgressIndicator()
-                  : ElevatedButton(
-                onPressed: _searchProduct,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                ),
-                child: const Text(
-                  "Calculate Sugar Content",
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () async {
-                  HomepageState? homepageState = context.findAncestorStateOfType<HomepageState>();
-                  if (homepageState != null) {
-                    await homepageState.refreshSugarData(); // Refresh data before navigating
-                    homepageState.setState(() => homepageState.myIndex = 0);
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.grey,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                ),
-                child: const Text("Back", style: TextStyle(color: Colors.white)),
-              ),
-            ],
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          "Food Sugar Search",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.purple,
+        elevation: 0,
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.purple.withOpacity(0.8), Colors.deepPurple.withOpacity(0.8)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
+        ),
+        child: Center(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Search Food",
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.purple,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        "Find sugar content in your food",
+                        style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                      ),
+                      const SizedBox(height: 20),
+                      if (_foodName != "Unknown Product")
+                        _buildResultCard("Product", _foodName, Colors.purple),
+                      const SizedBox(height: 10),
+                      _buildResultCard("Sugar Info", _sugarContent, Colors.deepPurple),
+                      const SizedBox(height: 20),
+                      _buildTextField(_searchController, "Enter Food Name", "e.g., Apple", Icons.search),
+                      const SizedBox(height: 16),
+                      _buildTextField(_amountConsumedController, "Amount Consumed (g)", "e.g., 100", Icons.fastfood),
+                      const SizedBox(height: 30),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _isLoading ? null : _searchProduct,
+                          icon: _isLoading
+                              ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          )
+                              : const Icon(Icons.search, color: Colors.white),
+                          label: Text(
+                            _isLoading ? "Searching..." : "Calculate Sugar Content",
+                            style: const TextStyle(color: Colors.white, fontSize: 18),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.purpleAccent,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                            elevation: 5,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () async {
+                            HomepageState? homepageState = context.findAncestorStateOfType<HomepageState>();
+                            if (homepageState != null) {
+                              await homepageState.refreshSugarData();
+                              homepageState.setState(() => homepageState.myIndex = 0);
+                            }
+                          },
+                          icon: const Icon(Icons.arrow_back, color: Colors.white),
+                          label: const Text(
+                            "Back to Home",
+                            style: TextStyle(color: Colors.white, fontSize: 18),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.grey,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                            elevation: 5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Helper method to build text fields
+  Widget _buildTextField(TextEditingController controller, String label, String hint, IconData icon) {
+    return TextField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        prefixIcon: Icon(icon, color: Colors.purple),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        focusedBorder: OutlineInputBorder(
+          borderSide: const BorderSide(color: Colors.purpleAccent, width: 2),
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+      keyboardType: label.contains("Amount") ? TextInputType.number : TextInputType.text,
+    );
+  }
+
+  // Helper method to build result cards
+  Widget _buildResultCard(String label, String value, Color color) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12.0),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [color.withOpacity(0.1), color.withOpacity(0.3)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: const TextStyle(fontSize: 16, color: Colors.black87)),
+            const SizedBox(height: 5),
+            Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.purple)),
+          ],
         ),
       ),
     );

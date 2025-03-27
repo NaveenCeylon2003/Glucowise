@@ -26,6 +26,30 @@ class Homeroutes extends StatelessWidget {
 class Homescreen extends StatelessWidget {
   const Homescreen({super.key});
 
+  Future<String> _getUsername() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      DocumentSnapshot doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      return doc['username'] as String? ?? user.displayName ?? 'User';
+    }
+    return 'User';
+  }
+
+  String _getMotivationalMessage(double progress) {
+    if (progress < 0.3) {
+      return "Great start! Keep it up!";
+    } else if (progress < 0.7) {
+      return "You're doing well—stay mindful!";
+    } else if (progress < 1.0) {
+      return "Almost there—watch your intake!";
+    } else {
+      return "Over the limit—let’s reset tomorrow!";
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     HomepageState? homepageState = context.findAncestorStateOfType<HomepageState>();
@@ -38,43 +62,152 @@ class Homescreen extends StatelessWidget {
 
     print("Homescreen build - Daily Limit: $dailyLimit, Total Sugar: $totalSugar, Remaining: $remainingSugar, Progress: $progress");
 
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: () {
-              homepageState?.setState(() {
-                homepageState.myIndex = 3; // Navigate to Scanoptions
-              });
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blueAccent,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Greeting with Username
+            FutureBuilder<String>(
+              future: _getUsername(),
+              builder: (context, snapshot) {
+                return Text(
+                  "Hello, ${snapshot.data ?? 'User'}!",
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blueAccent,
+                  ),
+                );
+              },
             ),
-            child: const Text("Lets Scan", style: TextStyle(color: Colors.white)),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            dailyLimit == 0.0 && totalSugar == 0.0
-                ? "Set a sugar limit to track your intake"
-                : "Daily Sugar Allowance: ${remainingSugar >= 0 ? remainingSugar.toStringAsFixed(1) : 0.0} g / ${dailyLimit.toStringAsFixed(1)} g",
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 10),
-          SizedBox(
-            width: 250,
-            child: LinearProgressIndicator(
-              value: progress,
-              backgroundColor: Colors.grey[300],
-              valueColor: const AlwaysStoppedAnimation<Color>(Colors.purple),
-              minHeight: 10,
+            const SizedBox(height: 10),
+            Text(
+              "Track your sugar intake today",
+              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
             ),
+            const SizedBox(height: 30),
+
+            // Circular Progress Indicator
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  height: 200,
+                  width: 200,
+                  child: CircularProgressIndicator(
+                    value: progress,
+                    strokeWidth: 12,
+                    backgroundColor: Colors.grey[300],
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      progress < 0.7 ? Colors.green : progress < 1.0 ? Colors.orange : Colors.red,
+                    ),
+                  ),
+                ),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      dailyLimit == 0.0 ? "Set Limit" : "${remainingSugar >= 0 ? remainingSugar.toStringAsFixed(1) : 0.0} g",
+                      style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      dailyLimit == 0.0 ? "to Start" : "Remaining",
+                      style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // Motivational Message
+            Text(
+              dailyLimit == 0.0 ? "Set a sugar limit to begin!" : _getMotivationalMessage(progress),
+              style: const TextStyle(fontSize: 18, fontStyle: FontStyle.italic, color: Colors.purple),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 30),
+
+            // Quick Stats Cards
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildStatCard("Today's Intake", "${totalSugar.toStringAsFixed(1)} g", Icons.fastfood, Colors.purpleAccent),
+                _buildStatCard("Daily Limit", "${dailyLimit.toStringAsFixed(1)} g", Icons.speed, Colors.purple),
+              ],
+            ),
+            const SizedBox(height: 30),
+
+            // Action Buttons
+            ElevatedButton.icon(
+              onPressed: () {
+                homepageState?.setState(() {
+                  homepageState.myIndex = 3; // Navigate to Scanoptions
+                });
+              },
+              icon: const Icon(Icons.qr_code_scanner, color: Colors.white),
+              label: const Text("Scan Now", style: TextStyle(color: Colors.white)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.purple,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                elevation: 5,
+              ),
+            ),
+            const SizedBox(height: 15),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                TextButton.icon(
+                  onPressed: () {
+                    homepageState?.setState(() => homepageState.myIndex = 1); // Insights
+                  },
+                  icon: const Icon(Icons.insights, color: Colors.purple),
+                  label: const Text("View Insights", style: TextStyle(color: Colors.purple)),
+                ),
+                const SizedBox(width: 20),
+                TextButton.icon(
+                  onPressed: () {
+                    homepageState?.setState(() => homepageState.myIndex = 10); // Sugar Limit
+                  },
+                  icon: const Icon(Icons.settings, color: Colors.purple),
+                  label: const Text("Set Limit", style: TextStyle(color: Colors.purple)),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Helper to build stat cards
+  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      child: Container(
+        width: 140,
+        padding: const EdgeInsets.all(16.0),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [color.withOpacity(0.1), color.withOpacity(0.3)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-          const SizedBox(height: 50),
-        ],
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 30),
+            const SizedBox(height: 10),
+            Text(title, style: TextStyle(fontSize: 16, color: Colors.grey[700])),
+            const SizedBox(height: 5),
+            Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          ],
+        ),
       ),
     );
   }
@@ -89,8 +222,8 @@ class Homepage extends StatefulWidget {
 
 class HomepageState extends State<Homepage> {
   int myIndex = 0;
-  double dailySugarLimit = 0.0; // Non-null default
-  double totalScannedSugar = 0.0; // Non-null default
+  double dailySugarLimit = 0.0;
+  double totalScannedSugar = 0.0;
   StreamSubscription<DocumentSnapshot>? _summarySubscription;
 
   List<Widget> widgetList = [
@@ -110,13 +243,13 @@ class HomepageState extends State<Homepage> {
   @override
   void initState() {
     super.initState();
-    _loadCachedData(); // Load cached data immediately
-    _listenToSugarData(); // Start real-time listener
+    _loadCachedData();
+    _listenToSugarData();
   }
 
   @override
   void dispose() {
-    _summarySubscription?.cancel(); // Clean up listener
+    _summarySubscription?.cancel();
     super.dispose();
   }
 
@@ -148,7 +281,6 @@ class HomepageState extends State<Homepage> {
       return;
     }
 
-    // Fetch sugar limit once (assuming it doesn't change often)
     FirebaseFirestore.instance
         .collection('users')
         .doc(user.uid)
@@ -166,7 +298,6 @@ class HomepageState extends State<Homepage> {
       print("Error fetching sugar limit: $e");
     });
 
-    // Real-time listener for daily_summaries
     String today = DateTime.now().toString().split(' ')[0];
     _summarySubscription = FirebaseFirestore.instance
         .collection('users')
@@ -191,12 +322,10 @@ class HomepageState extends State<Homepage> {
       }
     }, onError: (e) {
       print("Error in real-time listener: $e");
-      // Keep cached value if listener fails
     });
   }
 
   Future<void> refreshSugarData() async {
-    // No need for manual refresh with real-time listener, but keep for compatibility
     _listenToSugarData();
   }
 
@@ -237,7 +366,7 @@ class HomepageState extends State<Homepage> {
           setState(() {
             myIndex = index;
             if (index == 0 || index == 2) {
-              _listenToSugarData(); // Re-establish listener if needed
+              _listenToSugarData();
             }
           });
         },

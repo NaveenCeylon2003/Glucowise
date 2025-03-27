@@ -17,89 +17,82 @@ class _ScanoptionsState extends State<Scanoptions> {
     if (!mounted || homepageState == null) return;
 
     setState(() {
-      if (_selectedMethod == "Barcode Entry") {
-        homepageState.setState(() {
-          homepageState.myIndex = 5; // Navigate to BarcodeEntryPage
-        });
-      } else if (_selectedMethod == "Photo Scanner") {
-        homepageState.setState(() {
-          homepageState.myIndex = 4; // Navigate to ScanPage
-        });
-      } else if (_selectedMethod == "Search by Name") {
-        homepageState.setState(() {
-          homepageState.myIndex = 9; // Navigate to FoodSearchPage
-        });
+      switch (_selectedMethod) {
+        case "Barcode Entry":
+          homepageState.setState(() => homepageState.myIndex = 5);
+          break;
+        case "Photo Scanner":
+          homepageState.setState(() => homepageState.myIndex = 4);
+          break;
+        case "Search by Name":
+          homepageState.setState(() => homepageState.myIndex = 9);
+          break;
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Text(
-            "Select your preferred method",
-            style: TextStyle(fontSize: 18),
-          ),
-          const SizedBox(height: 20),
-          DropdownButton<String>(
-            value: _selectedMethod,
-            onChanged: (String? newValue) {
-              setState(() {
-                _selectedMethod = newValue!;
-              });
-            },
-            items: _scanMethods.map((String method) {
-              return DropdownMenuItem<String>(
-                value: method,
-                child: Text(method),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            "Selected: $_selectedMethod",
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: _navigateBasedOnSelection,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blueAccent,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Select Scan Method"),
+        centerTitle: true,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const Text(
+              "Select your preferred scanning method",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            DropdownButtonFormField<String>(
+              value: _selectedMethod,
+              onChanged: (String? newValue) {
+                setState(() => _selectedMethod = newValue!);
+              },
+              decoration: InputDecoration(
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+              items: _scanMethods.map((String method) {
+                return DropdownMenuItem<String>(
+                  value: method,
+                  child: Text(method, style: const TextStyle(fontSize: 16)),
+                );
+              }).toList(),
             ),
-            child: const Text(
-              "Proceed",
-              style: TextStyle(color: Colors.white),
-            ),
-          ),
-          const SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: () {
-              HomepageState? homepageState = context.findAncestorStateOfType<HomepageState>();
-              homepageState?.setState(() {
-                homepageState.myIndex = 0; // Back to Homescreen
-              });
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.grey,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+            const SizedBox(height: 30),
+            FilledButton(
+              onPressed: _navigateBasedOnSelection,
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                textStyle: const TextStyle(fontSize: 18),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+              child: const Text("Proceed"),
             ),
-            child: const Text(
-              "Back",
-              style: TextStyle(color: Colors.white),
+            const SizedBox(height: 15),
+            FilledButton.tonal(
+              onPressed: () {
+                HomepageState? homepageState = context.findAncestorStateOfType<HomepageState>();
+                homepageState?.setState(() => homepageState.myIndex = 0);
+              },
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                textStyle: const TextStyle(fontSize: 18),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text("Back"),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
+
