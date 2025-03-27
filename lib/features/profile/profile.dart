@@ -28,10 +28,10 @@ class _ProfilePageState extends State<ProfilePage> {
           .collection('users')
           .doc(user.uid)
           .get();
-      if (doc.exists && doc['sugarLimit'] != null) {
+      if (doc.exists) {
         setState(() {
-          _currentLimit = "${doc['sugarLimit']} g";
-          _sugarLimitController.text = doc['sugarLimit'].toString();
+          _currentLimit = "${(doc['sugarLimit'] as num?)?.toStringAsFixed(1) ?? (doc['recommendedSugarIntake'] as num?)?.toStringAsFixed(1) ?? 'Not set'} g";
+          _sugarLimitController.text = (doc['sugarLimit'] as num?)?.toString() ?? (doc['recommendedSugarIntake'] as num?)?.toString() ?? '';
         });
       }
     }
@@ -78,6 +78,10 @@ class _ProfilePageState extends State<ProfilePage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Sugar limit saved successfully!")),
       );
+
+      // Refresh Homepage data
+      HomepageState? homepageState = context.findAncestorStateOfType<HomepageState>();
+      await homepageState?.refreshSugarData();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error saving sugar limit: $e")),
@@ -91,69 +95,112 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        width: 300,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              "Profile",
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              "Current Daily Sugar Limit: $_currentLimit",
-              style: const TextStyle(fontSize: 18),
-            ),
-            const SizedBox(height: 30),
-            TextField(
-              controller: _sugarLimitController,
-              decoration: const InputDecoration(
-                labelText: "Set Daily Sugar Limit (g)",
-                prefixIcon: Icon(Icons.cake),
-                border: OutlineInputBorder(),
+    return SingleChildScrollView(
+      child: Center(
+        child: Container(
+          width: 300,
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                "Profile Settings",
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 30),
-            _isLoading
-                ? const CircularProgressIndicator()
-                : ElevatedButton(
-              onPressed: _saveSugarLimit,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blueAccent,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+              const SizedBox(height: 20),
+              Text(
+                "Current Daily Sugar Limit: $_currentLimit",
+                style: const TextStyle(fontSize: 18),
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                controller: _sugarLimitController,
+                decoration: const InputDecoration(
+                  labelText: "Set Daily Sugar Limit (g)",
+                  prefixIcon: Icon(Icons.cake),
+                  border: OutlineInputBorder(),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                keyboardType: TextInputType.number,
               ),
-              child: const Text(
-                "Save Sugar Limit",
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                HomepageState? homepageState = context.findAncestorStateOfType<HomepageState>();
-                homepageState?.setState(() {
-                  homepageState.myIndex = 0; // Back to Homescreen
-                });
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.grey,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+              const SizedBox(height: 20),
+              _isLoading
+                  ? const CircularProgressIndicator()
+                  : ElevatedButton(
+                onPressed: _saveSugarLimit,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueAccent,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                child: const Text("Save Sugar Limit", style: TextStyle(color: Colors.white)),
               ),
-              child: const Text(
-                "Back",
-                style: TextStyle(color: Colors.white),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  HomepageState? homepageState = context.findAncestorStateOfType<HomepageState>();
+                  homepageState?.setState(() => homepageState.myIndex = 6); // Update Account
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueAccent,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                ),
+                child: const Text("Update Account", style: TextStyle(color: Colors.white)),
               ),
-            ),
-          ],
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  HomepageState? homepageState = context.findAncestorStateOfType<HomepageState>();
+                  homepageState?.setState(() => homepageState.myIndex = 7); // Change Email
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueAccent,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                ),
+                child: const Text("Change Email", style: TextStyle(color: Colors.white)),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  HomepageState? homepageState = context.findAncestorStateOfType<HomepageState>();
+                  homepageState?.setState(() => homepageState.myIndex = 8); // Logout
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                ),
+                child: const Text("Log Out", style: TextStyle(color: Colors.white)),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  HomepageState? homepageState = context.findAncestorStateOfType<HomepageState>();
+                  homepageState?.setState(() => homepageState.myIndex = 9); // Notification Settings
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueAccent,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                ),
+                child: const Text("Notification Settings", style: TextStyle(color: Colors.white)),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  HomepageState? homepageState = context.findAncestorStateOfType<HomepageState>();
+                  homepageState?.setState(() => homepageState.myIndex = 0); // Back to Homescreen
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.grey,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                ),
+                child: const Text("Back", style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          ),
         ),
       ),
     );

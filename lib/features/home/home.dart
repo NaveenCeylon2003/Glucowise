@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:g21285878naveen/features/insights/insights.dart';
 import 'package:g21285878naveen/features/profile/profile.dart';
+import 'package:g21285878naveen/features/profile/update_account.dart';
+import 'package:g21285878naveen/features/profile/change_email.dart';
+import 'package:g21285878naveen/features/profile/logout.dart';
+import 'package:g21285878naveen/features/profile/notification_settings.dart';
 import 'package:g21285878naveen/features/scan/scan.dart';
 import 'package:g21285878naveen/features/scan/options.dart';
 import 'package:g21285878naveen/features/scan/barcode_entry.dart';
@@ -22,19 +26,16 @@ class Homescreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     HomepageState? homepageState = context.findAncestorStateOfType<HomepageState>();
-
-    // Show loading indicator if data is still being fetched
     if (homepageState?.isLoading ?? true) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    // Calculate progress (fraction of limit used)
     double totalSugar = homepageState?.totalScannedSugar ?? 0.0;
     double dailyLimit = homepageState?.dailySugarLimit ?? 0.0;
     double remainingSugar = dailyLimit - totalSugar;
     double progress = dailyLimit > 0 ? totalSugar / dailyLimit : 0.0;
-    if (progress > 1.0) progress = 1.0; // Cap at 100%
-    if (progress < 0.0) progress = 0.0; // No negative progress
+    if (progress > 1.0) progress = 1.0;
+    if (progress < 0.0) progress = 0.0;
 
     return Center(
       child: Column(
@@ -49,15 +50,10 @@ class Homescreen extends StatelessWidget {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blueAccent,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
             ),
-            child: const Text(
-              "Lets Scan",
-              style: TextStyle(color: Colors.white),
-            ),
+            child: const Text("Lets Scan", style: TextStyle(color: Colors.white)),
           ),
           const SizedBox(height: 20),
           Text(
@@ -95,19 +91,23 @@ class HomepageState extends State<Homepage> {
   bool isLoading = true;
 
   List<Widget> widgetList = [
-    const Homeroutes(),
-    const Insights(),
-    const ProfilePage(),
-    const Scanoptions(),
-    const ScanPage(),
-    const BarcodeEntryPage(),
+    const Homeroutes(),              // 0: Home
+    const Insights(),               // 1: Insights
+    const ProfilePage(),            // 2: Profile
+    const Scanoptions(),            // 3: Scan Options
+    const ScanPage(),              // 4: Scan Page
+    const BarcodeEntryPage(),      // 5: Barcode Entry
+    const UpdateAccountScreen(),   // 6: Update Account
+    const ChangeEmailScreen(),     // 7: Change Email
+    const LogoutScreen(),          // 8: Logout
+    const NotificationSettingsScreen(), // 9: Notification Settings
   ];
 
   @override
   void initState() {
     super.initState();
     _loadSugarData();
-    _saveDailySummary(); // Save summary when app starts
+    _saveDailySummary();
   }
 
   Future<void> _loadSugarData() async {
@@ -116,17 +116,18 @@ class HomepageState extends State<Homepage> {
 
     if (user != null) {
       try {
-        // Load sugar limit
-        DocumentSnapshot limitDoc = await FirebaseFirestore.instance
+        DocumentSnapshot userDoc = await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
             .get();
 
         setState(() {
-          dailySugarLimit = (limitDoc['sugarLimit'] as num?)?.toDouble() ?? 0.0;
+          // Use sugarLimit if set, otherwise fall back to recommendedSugarIntake
+          dailySugarLimit = (userDoc['sugarLimit'] as num?)?.toDouble() ??
+              (userDoc['recommendedSugarIntake'] as num?)?.toDouble() ??
+              0.0;
         });
 
-        // Load total sugar
         QuerySnapshot barcodeDocs = await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
@@ -136,9 +137,7 @@ class HomepageState extends State<Homepage> {
         double total = 0.0;
         for (var doc in barcodeDocs.docs) {
           final sugar = doc['sugarContent'];
-          if (sugar != null && sugar is num) {
-            total += sugar.toDouble();
-          }
+          if (sugar != null && sugar is num) total += sugar.toDouble();
         }
         setState(() => totalScannedSugar = total);
       } catch (e) {
@@ -152,10 +151,14 @@ class HomepageState extends State<Homepage> {
     setState(() => isLoading = false);
   }
 
+  Future<void> refreshSugarData() async {
+    await _loadSugarData();
+  }
+
   Future<void> _saveDailySummary() async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user != null && dailySugarLimit != null) {
-      String date = DateTime.now().toString().split(' ')[0]; // YYYY-MM-DD
+      String date = DateTime.now().toString().split(' ')[0];
       double excessOrDeficit = totalScannedSugar - dailySugarLimit!;
 
       await FirebaseFirestore.instance

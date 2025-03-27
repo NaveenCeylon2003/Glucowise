@@ -54,7 +54,7 @@ class Start extends StatelessWidget {
                   // Sign-up button
                   ElevatedButton(
                     onPressed: () {
-                      Navigator.pushNamed(context, "form");
+                      Navigator.pushNamed(context, "signup");
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blueAccent,

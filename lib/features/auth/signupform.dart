@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Import Firebase Auth
-import 'package:g21285878naveen/features/auth/form1.dart';
-import 'package:g21285878naveen/features/auth/login.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Signupscreen extends StatelessWidget {
   final TextEditingController _usernameController = TextEditingController();
@@ -11,29 +10,52 @@ class Signupscreen extends StatelessWidget {
   Signupscreen({super.key});
 
   void _registerUser(BuildContext context) async {
-    final email = _emailController.text;
-    final password = _passwordController.text;
+    final username = _usernameController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    // Validate inputs
+    if (username.isEmpty || email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill in all fields.')),
+      );
+      return;
+    }
 
     try {
+      // Create user with email and password
       final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
       if (credential.user != null) {
-        await credential.user?.sendEmailVerification();
+        // Update Firebase Auth profile with username
+        await credential.user!.updateDisplayName(username);
 
+        // Save user details to Firestore
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(credential.user!.uid)
+            .set({
+          'username': username,
+          'email': email,
+          'createdAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+
+        // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Verification email sent. Please check your email.'),
+            content: Text('Account created successfully!'),
+            backgroundColor: Colors.green,
           ),
         );
-        Navigator.pushNamed(context, "login");
+
+        // Navigate to TDEE calculator screen (named "form")
+        Navigator.pushNamed(context, "form");
       }
     } on FirebaseAuthException catch (e) {
-      // Print the exact error code and message
       print("FirebaseAuthException: ${e.code} - ${e.message}");
-
       String errorMessage = "Registration failed. Please try again.";
       if (e.code == 'weak-password') {
         errorMessage = "The password provided is too weak.";
@@ -44,14 +66,15 @@ class Signupscreen extends StatelessWidget {
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(errorMessage)),
+        SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
       );
     } catch (e) {
-      // Print other errors
       print("Unexpected error: $e");
-
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("An unexpected error occurred.")),
+        const SnackBar(
+          content: Text("An unexpected error occurred."),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -66,33 +89,41 @@ class Signupscreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(
+              const Text(
                 "User Registration",
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
+              TextField(
+                controller: _usernameController,
+                decoration: const InputDecoration(
+                  labelText: "Username",
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.text,
+              ),
+              const SizedBox(height: 20),
               TextField(
                 controller: _emailController,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: "Email",
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.emailAddress,
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               TextField(
                 controller: _passwordController,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: "Password",
                   border: OutlineInputBorder(),
                 ),
                 obscureText: true,
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () => _registerUser(context),
                 style: ElevatedButton.styleFrom(
@@ -100,14 +131,13 @@ class Signupscreen extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
-
-                  padding: EdgeInsets.symmetric(
+                  padding: const EdgeInsets.symmetric(
                     horizontal: 40,
                     vertical: 15,
                   ),
                 ),
-                child: Text(
-                  "Let's get Started",
+                child: const Text(
+                  "Sign Up", // Changed from "Let's get Started"
                   style: TextStyle(color: Colors.white),
                 ),
               ),
