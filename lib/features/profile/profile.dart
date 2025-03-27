@@ -1,118 +1,167 @@
 import 'package:flutter/material.dart';
-import 'package:g21285878naveen/features/scan/options.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:g21285878naveen/features/home/home.dart';
 
-class Profileroutes extends StatelessWidget {
-  const Profileroutes({super.key});
+class ProfilePage extends StatefulWidget {
+  const ProfilePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return const Profilepage(); // Remove nested MaterialApp, use Profilepage directly
+  _ProfilePageState createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  final TextEditingController _sugarLimitController = TextEditingController();
+  String _currentLimit = "Not set";
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSugarLimit();
   }
-}
 
-class Profilepage extends StatefulWidget {
-  const Profilepage({super.key});
+  Future<void> _loadSugarLimit() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      DocumentSnapshot doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      if (doc.exists && doc['sugarLimit'] != null) {
+        setState(() {
+          _currentLimit = "${doc['sugarLimit']} g";
+          _sugarLimitController.text = doc['sugarLimit'].toString();
+        });
+      }
+    }
+  }
 
-  @override
-  _ProfilepageState createState() => _ProfilepageState();
-}
+  Future<void> _saveSugarLimit() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please log in to save your sugar limit.")),
+      );
+      return;
+    }
 
-class _ProfilepageState extends State<Profilepage> {
-  bool _isDarkMode = false; // Track theme state
+    String sugarLimitText = _sugarLimitController.text.trim();
+    if (sugarLimitText.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please enter a sugar limit.")),
+      );
+      return;
+    }
 
-  // Define light and dark themes
-  ThemeData _lightTheme = ThemeData(
-    brightness: Brightness.light,
-    primarySwatch: Colors.blue,
-    scaffoldBackgroundColor: Colors.white,
-    textTheme: const TextTheme(
-      bodyLarge: TextStyle(color: Colors.black),
-      bodyMedium: TextStyle(color: Colors.black87),
-    ),
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.blueAccent,
-        foregroundColor: Colors.white,
-      ),
-    ),
-  );
+    double? sugarLimit = double.tryParse(sugarLimitText);
+    if (sugarLimit == null || sugarLimit <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please enter a valid positive number.")),
+      );
+      return;
+    }
 
-  ThemeData _darkTheme = ThemeData(
-    brightness: Brightness.dark,
-    primarySwatch: Colors.blue,
-    scaffoldBackgroundColor: Colors.grey[900],
-    textTheme: const TextTheme(
-      bodyLarge: TextStyle(color: Colors.white),
-      bodyMedium: TextStyle(color: Colors.white70),
-    ),
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.blueAccent,
-        foregroundColor: Colors.white,
-      ),
-    ),
-  );
-
-  void _toggleTheme(bool value) {
     setState(() {
-      _isDarkMode = value;
+      _isLoading = true;
     });
+
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+        'sugarLimit': sugarLimit,
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      setState(() {
+        _currentLimit = "$sugarLimit g";
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Sugar limit saved successfully!")),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error saving sugar limit: $e")),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      theme: _isDarkMode ? _darkTheme : _lightTheme, // Apply theme dynamically
-      debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const SizedBox(height: 20),
-              // Profile content (e.g., Update Account button)
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pushNamed(context, "options");
-                },
-                style: ElevatedButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 40,
-                    vertical: 15,
-                  ),
-                ),
-                child: const Text(
-                  "Update Account",
-                  style: TextStyle(color: Colors.white),
-                ),
+    return Center(
+      child: Container(
+        width: 300,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text(
+              "Profile",
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              "Current Daily Sugar Limit: $_currentLimit",
+              style: const TextStyle(fontSize: 18),
+            ),
+            const SizedBox(height: 30),
+            TextField(
+              controller: _sugarLimitController,
+              decoration: const InputDecoration(
+                labelText: "Set Daily Sugar Limit (g)",
+                prefixIcon: Icon(Icons.cake),
+                border: OutlineInputBorder(),
               ),
-              const SizedBox(height: 20),
-              // Theme toggle switch
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    "Dark Mode",
-                    style: TextStyle(fontSize: 16),
-                  ),
-                  const SizedBox(width: 10),
-                  Switch(
-                    value: _isDarkMode,
-                    onChanged: _toggleTheme,
-                    activeColor: Colors.blueAccent,
-                  ),
-                ],
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 30),
+            _isLoading
+                ? const CircularProgressIndicator()
+                : ElevatedButton(
+              onPressed: _saveSugarLimit,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blueAccent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
               ),
-            ],
-          ),
+              child: const Text(
+                "Save Sugar Limit",
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                HomepageState? homepageState = context.findAncestorStateOfType<HomepageState>();
+                homepageState?.setState(() {
+                  homepageState.myIndex = 0; // Back to Homescreen
+                });
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.grey,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+              ),
+              child: const Text(
+                "Back",
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
         ),
       ),
-      routes: {
-        "options": (context) => const Scanoptions(),
-      },
     );
+  }
+
+  @override
+  void dispose() {
+    _sugarLimitController.dispose();
+    super.dispose();
   }
 }

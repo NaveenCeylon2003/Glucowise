@@ -43,6 +43,7 @@ dependencies:
   http: ^1.3.0
   openfoodfacts: ^3.20.0
   shared_preferences: ^2.3.0
+  fl_chart: ^0.68.0
 
 dev_dependencies:
   flutter_test:

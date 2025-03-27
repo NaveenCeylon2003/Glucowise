@@ -1,27 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:g21285878naveen/features/scan/scan.dart';
-import 'package:g21285878naveen/features/scan/barcode_entry.dart'; // Import the new page
-
-void main() {
-  runApp(const Scanroutes());
-}
-
-class Scanroutes extends StatelessWidget {
-  const Scanroutes({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      initialRoute: "options",
-      routes: {
-        "options": (context) => const Scanoptions(),
-        "scan": (context) => const ScanPage(), // Fixed: Added const
-        "barcode": (context) => const BarcodeEntryPage(), // Fixed: Added const
-      },
-    );
-  }
-}
+import 'package:g21285878naveen/features/scan/barcode_entry.dart';
+import 'package:g21285878naveen/features/home/home.dart'; // Import to access _HomepageState
 
 class Scanoptions extends StatefulWidget {
   const Scanoptions({super.key});
@@ -35,64 +15,88 @@ class _ScanoptionsState extends State<Scanoptions> {
   final List<String> _scanMethods = ["Barcode Entry", "Photo Scanner"];
 
   void _navigateBasedOnSelection() {
-    if (!mounted) return;
+    HomepageState? homepageState = context.findAncestorStateOfType<HomepageState>();
+    if (!mounted || homepageState == null) return;
 
-    if (_selectedMethod == "Barcode Entry") {
-      Navigator.of(context).pushNamed("barcode");
-    } else if (_selectedMethod == "Photo Scanner") {
-      Navigator.of(context).pushNamed("scan"); // For testing barcode scanner later
-    }
+    setState(() {
+      if (_selectedMethod == "Barcode Entry") {
+        homepageState.setState(() {
+          homepageState.myIndex = 5; // Navigate to BarcodeEntryPage
+        });
+      } else if (_selectedMethod == "Photo Scanner") {
+        homepageState.setState(() {
+          homepageState.myIndex = 4; // Navigate to ScanPage
+        });
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Scan Options")),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text(
-              "Select your preferred method of scanning",
-              style: TextStyle(fontSize: 18),
-            ),
-            const SizedBox(height: 20),
-            DropdownButton<String>(
-              value: _selectedMethod,
-              onChanged: (String? newValue) {
-                setState(() {
-                  _selectedMethod = newValue!;
-                });
-              },
-              items: _scanMethods.map((String method) {
-                return DropdownMenuItem<String>(
-                  value: method,
-                  child: Text(method),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              "Selected: $_selectedMethod",
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _navigateBasedOnSelection,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blueAccent,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+    return Center( // Remove Scaffold to avoid nested Scaffold issues
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text(
+            "Select your preferred method of scanning",
+            style: TextStyle(fontSize: 18),
+          ),
+          const SizedBox(height: 20),
+          DropdownButton<String>(
+            value: _selectedMethod,
+            onChanged: (String? newValue) {
+              setState(() {
+                _selectedMethod = newValue!;
+              });
+            },
+            items: _scanMethods.map((String method) {
+              return DropdownMenuItem<String>(
+                value: method,
+                child: Text(method),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            "Selected: $_selectedMethod",
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: _navigateBasedOnSelection,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blueAccent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
               ),
-              child: const Text(
-                "Proceed",
-                style: TextStyle(color: Colors.white),
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
             ),
-          ],
-        ),
+            child: const Text(
+              "Proceed",
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: () {
+              HomepageState? homepageState = context.findAncestorStateOfType<HomepageState>();
+              homepageState?.setState(() {
+                homepageState.myIndex = 0; // Back to Homescreen
+              });
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.grey,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+            ),
+            child: const Text(
+              "Back",
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
       ),
     );
   }
