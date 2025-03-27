@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:g21285878naveen/features/home/home.dart';
+import 'package:g21285878naveen/features/profile/sugar_limit.dart'; // Import SugarLimitPage
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -11,9 +12,7 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  final TextEditingController _sugarLimitController = TextEditingController();
   String _currentLimit = "Not set";
-  bool _isLoading = false;
 
   @override
   void initState() {
@@ -31,65 +30,8 @@ class _ProfilePageState extends State<ProfilePage> {
       if (doc.exists) {
         setState(() {
           _currentLimit = "${(doc['sugarLimit'] as num?)?.toStringAsFixed(1) ?? (doc['recommendedSugarIntake'] as num?)?.toStringAsFixed(1) ?? 'Not set'} g";
-          _sugarLimitController.text = (doc['sugarLimit'] as num?)?.toString() ?? (doc['recommendedSugarIntake'] as num?)?.toString() ?? '';
         });
       }
-    }
-  }
-
-  Future<void> _saveSugarLimit() async {
-    User? user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please log in to save your sugar limit.")),
-      );
-      return;
-    }
-
-    String sugarLimitText = _sugarLimitController.text.trim();
-    if (sugarLimitText.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please enter a sugar limit.")),
-      );
-      return;
-    }
-
-    double? sugarLimit = double.tryParse(sugarLimitText);
-    if (sugarLimit == null || sugarLimit <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please enter a valid positive number.")),
-      );
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-        'sugarLimit': sugarLimit,
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-
-      setState(() {
-        _currentLimit = "$sugarLimit g";
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Sugar limit saved successfully!")),
-      );
-
-      // Refresh Homepage data
-      HomepageState? homepageState = context.findAncestorStateOfType<HomepageState>();
-      await homepageState?.refreshSugarData();
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error saving sugar limit: $e")),
-      );
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
     }
   }
 
@@ -113,26 +55,17 @@ class _ProfilePageState extends State<ProfilePage> {
                 style: const TextStyle(fontSize: 18),
               ),
               const SizedBox(height: 20),
-              TextField(
-                controller: _sugarLimitController,
-                decoration: const InputDecoration(
-                  labelText: "Set Daily Sugar Limit (g)",
-                  prefixIcon: Icon(Icons.cake),
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 20),
-              _isLoading
-                  ? const CircularProgressIndicator()
-                  : ElevatedButton(
-                onPressed: _saveSugarLimit,
+              ElevatedButton(
+                onPressed: () {
+                  HomepageState? homepageState = context.findAncestorStateOfType<HomepageState>();
+                  homepageState?.setState(() => homepageState.myIndex = 11); // Navigate to SugarLimitPage
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blueAccent,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                 ),
-                child: const Text("Save Sugar Limit", style: TextStyle(color: Colors.white)),
+                child: const Text("Set Sugar Limit", style: TextStyle(color: Colors.white)),
               ),
               const SizedBox(height: 20),
               ElevatedButton(
@@ -204,11 +137,5 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _sugarLimitController.dispose();
-    super.dispose();
   }
 }

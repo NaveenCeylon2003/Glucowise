@@ -5,9 +5,11 @@ import 'package:g21285878naveen/features/profile/update_account.dart';
 import 'package:g21285878naveen/features/profile/change_email.dart';
 import 'package:g21285878naveen/features/profile/logout.dart';
 import 'package:g21285878naveen/features/profile/notification_settings.dart';
+import 'package:g21285878naveen/features/profile/sugar_limit.dart';
 import 'package:g21285878naveen/features/scan/scan.dart';
 import 'package:g21285878naveen/features/scan/options.dart';
 import 'package:g21285878naveen/features/scan/barcode_entry.dart';
+import 'package:g21285878naveen/features/scan/food_search.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -101,6 +103,8 @@ class HomepageState extends State<Homepage> {
     const ChangeEmailScreen(),     // 7: Change Email
     const LogoutScreen(),          // 8: Logout
     const NotificationSettingsScreen(), // 9: Notification Settings
+    const FoodSearchPage(),         // 10: Food Search Page
+    const SugarLimitPage(),         // 11: Sugar Limit Page (New)
   ];
 
   @override
@@ -122,7 +126,6 @@ class HomepageState extends State<Homepage> {
             .get();
 
         setState(() {
-          // Use sugarLimit if set, otherwise fall back to recommendedSugarIntake
           dailySugarLimit = (userDoc['sugarLimit'] as num?)?.toDouble() ??
               (userDoc['recommendedSugarIntake'] as num?)?.toDouble() ??
               0.0;
@@ -134,8 +137,18 @@ class HomepageState extends State<Homepage> {
             .collection('scanned_barcodes')
             .get();
 
+        QuerySnapshot searchDocs = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .collection('searched_foods')
+            .get();
+
         double total = 0.0;
         for (var doc in barcodeDocs.docs) {
+          final sugar = doc['sugarContent'];
+          if (sugar != null && sugar is num) total += sugar.toDouble();
+        }
+        for (var doc in searchDocs.docs) {
           final sugar = doc['sugarContent'];
           if (sugar != null && sugar is num) total += sugar.toDouble();
         }

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:g21285878naveen/features/scan/scan.dart';
-import 'package:g21285878naveen/features/scan/barcode_entry.dart';
-import 'package:g21285878naveen/features/home/home.dart'; // Import to access _HomepageState
+import 'package:g21285878naveen/features/home/home.dart'; // Import to access HomepageState
 
 class Scanoptions extends StatefulWidget {
   const Scanoptions({super.key});
@@ -12,7 +10,7 @@ class Scanoptions extends StatefulWidget {
 
 class _ScanoptionsState extends State<Scanoptions> {
   String _selectedMethod = "Barcode Entry";
-  final List<String> _scanMethods = ["Barcode Entry", "Photo Scanner"];
+  final List<String> _scanMethods = ["Barcode Entry", "Photo Scanner", "Search by Name"];
 
   void _navigateBasedOnSelection() {
     HomepageState? homepageState = context.findAncestorStateOfType<HomepageState>();
@@ -27,18 +25,22 @@ class _ScanoptionsState extends State<Scanoptions> {
         homepageState.setState(() {
           homepageState.myIndex = 4; // Navigate to ScanPage
         });
+      } else if (_selectedMethod == "Search by Name") {
+        homepageState.setState(() {
+          homepageState.myIndex = 10; // Navigate to FoodSearchPage
+        });
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Center( // Remove Scaffold to avoid nested Scaffold issues
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Text(
-            "Select your preferred method of scanning",
+            "Select your preferred method",
             style: TextStyle(fontSize: 18),
           ),
           const SizedBox(height: 20),
