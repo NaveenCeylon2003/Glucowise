@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class Signupscreen extends StatefulWidget { // Changed to StatefulWidget for better control
+class Signupscreen extends StatefulWidget {
+  // Changed to StatefulWidget for better control
   const Signupscreen({super.key});
 
   @override
@@ -28,7 +29,8 @@ class _SignupscreenState extends State<Signupscreen> {
     }
 
     try {
-      final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      final credential =
+          await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
@@ -91,7 +93,10 @@ class _SignupscreenState extends State<Signupscreen> {
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.purple.withOpacity(0.8), Colors.deepPurple.withOpacity(0.8)],
+            colors: [
+              Colors.purple.withOpacity(0.8),
+              Colors.deepPurple.withOpacity(0.8)
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -102,7 +107,8 @@ class _SignupscreenState extends State<Signupscreen> {
               padding: const EdgeInsets.all(20.0),
               child: Card(
                 elevation: 4,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
                 child: Padding(
                   padding: const EdgeInsets.all(20.0),
                   child: Column(
@@ -122,30 +128,39 @@ class _SignupscreenState extends State<Signupscreen> {
                         style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                       ),
                       const SizedBox(height: 20),
-                      _buildTextField(_usernameController, "Username", "e.g., JohnDoe", Icons.person),
+                      _buildTextField(_usernameController, "Username",
+                          "e.g., JohnDoe", Icons.person),
                       const SizedBox(height: 16),
-                      _buildTextField(_emailController, "Email", "e.g., john@example.com", Icons.email),
+                      _buildTextField(_emailController, "Email",
+                          "e.g., john@example.com", Icons.email),
                       const SizedBox(height: 16),
-                      _buildTextField(_passwordController, "Password", "Enter your password", Icons.lock, obscureText: true),
+                      _buildTextField(_passwordController, "Password",
+                          "Enter your password", Icons.lock,
+                          obscureText: true),
                       const SizedBox(height: 30),
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
-                          onPressed: _isLoading ? null : () => _registerUser(context),
+                          onPressed:
+                              _isLoading ? null : () => _registerUser(context),
                           icon: _isLoading
                               ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                          )
-                              : const Icon(Icons.person_add, color: Colors.white),
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                      color: Colors.white, strokeWidth: 2),
+                                )
+                              : const Icon(Icons.person_add,
+                                  color: Colors.white),
                           label: Text(
                             _isLoading ? "Signing Up..." : "Sign Up",
-                            style: const TextStyle(color: Colors.white, fontSize: 18),
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 18),
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.purpleAccent,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
                             padding: const EdgeInsets.symmetric(vertical: 15),
                             elevation: 5,
                           ),
@@ -160,10 +175,13 @@ class _SignupscreenState extends State<Signupscreen> {
                             style: TextStyle(color: Colors.grey[600]),
                           ),
                           TextButton(
-                            onPressed: () => Navigator.pushNamed(context, "login"),
+                            onPressed: () =>
+                                Navigator.pushNamed(context, "login"),
                             child: const Text(
                               "Log In",
-                              style: TextStyle(color: Colors.purpleAccent, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                  color: Colors.purpleAccent,
+                                  fontWeight: FontWeight.bold),
                             ),
                           ),
                         ],
@@ -181,12 +199,12 @@ class _SignupscreenState extends State<Signupscreen> {
 
   // Helper method to build text fields
   Widget _buildTextField(
-      TextEditingController controller,
-      String label,
-      String hint,
-      IconData icon, {
-        bool obscureText = false,
-      }) {
+    TextEditingController controller,
+    String label,
+    String hint,
+    IconData icon, {
+    bool obscureText = false,
+  }) {
     return TextField(
       controller: controller,
       decoration: InputDecoration(
@@ -199,7 +217,8 @@ class _SignupscreenState extends State<Signupscreen> {
           borderRadius: BorderRadius.circular(10),
         ),
       ),
-      keyboardType: label == "Email" ? TextInputType.emailAddress : TextInputType.text,
+      keyboardType:
+          label == "Email" ? TextInputType.emailAddress : TextInputType.text,
       obscureText: obscureText,
     );
   }

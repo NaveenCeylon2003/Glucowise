@@ -43,7 +43,12 @@ class _TDEECalculatorScreenState extends State<TDEECalculatorScreen> {
     double? weight = double.tryParse(weightText);
     int? age = int.tryParse(ageText);
 
-    if (height == null || weight == null || age == null || height <= 0 || weight <= 0 || age <= 0) {
+    if (height == null ||
+        weight == null ||
+        age == null ||
+        height <= 0 ||
+        weight <= 0 ||
+        age <= 0) {
       _showSnackBar("Invalid input. All values must be positive numbers.");
       setState(() => _isLoading = false);
       return;
@@ -73,7 +78,7 @@ class _TDEECalculatorScreenState extends State<TDEECalculatorScreen> {
           'gender': _gender,
           'activityLevel': _activityLevel,
           'tdee': tdee,
-          'recommendedSugarIntake': sugarGrams,
+          'sugarLimit': sugarGrams,
           'timestamp': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
         _showSnackBar("Data saved successfully.");
@@ -85,7 +90,7 @@ class _TDEECalculatorScreenState extends State<TDEECalculatorScreen> {
           _showSnackBar("Failed to send verification email: $emailError");
         }
 
-        Navigator.pushReplacementNamed(context, "home");
+        Navigator.pushReplacementNamed(context, "login");
       } catch (e) {
         _showSnackBar("Error saving data: $e");
       } finally {
@@ -129,7 +134,10 @@ class _TDEECalculatorScreenState extends State<TDEECalculatorScreen> {
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.purple.withOpacity(0.8), Colors.deepPurple.withOpacity(0.8)],
+            colors: [
+              Colors.purple.withOpacity(0.8),
+              Colors.deepPurple.withOpacity(0.8)
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -140,7 +148,8 @@ class _TDEECalculatorScreenState extends State<TDEECalculatorScreen> {
             child: Center(
               child: Card(
                 elevation: 4,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
                 child: Padding(
                   padding: const EdgeInsets.all(20.0),
                   child: Column(
@@ -160,17 +169,20 @@ class _TDEECalculatorScreenState extends State<TDEECalculatorScreen> {
                         style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                       ),
                       const SizedBox(height: 20),
-                      _buildTextField(_heightController, "Height (cm)", "e.g., 170", Icons.height),
+                      _buildTextField(_heightController, "Height (cm)",
+                          "e.g., 170", Icons.height),
                       const SizedBox(height: 16),
-                      _buildTextField(_weightController, "Weight (kg)", "e.g., 70", Icons.fitness_center),
+                      _buildTextField(_weightController, "Weight (kg)",
+                          "e.g., 70", Icons.fitness_center),
                       const SizedBox(height: 16),
-                      _buildTextField(_ageController, "Age (years)", "e.g., 30", Icons.cake),
+                      _buildTextField(_ageController, "Age (years)", "e.g., 30",
+                          Icons.cake),
                       const SizedBox(height: 16),
                       _buildDropdownField(
                         "Gender",
                         _gender,
                         ['Male', 'Female'],
-                            (value) => setState(() => _gender = value!),
+                        (value) => setState(() => _gender = value!),
                         Icons.people_alt,
                       ),
                       const SizedBox(height: 16),
@@ -178,7 +190,7 @@ class _TDEECalculatorScreenState extends State<TDEECalculatorScreen> {
                         "Activity Level",
                         _activityLevel,
                         _activityMultipliers.keys.toList(),
-                            (value) => setState(() => _activityLevel = value!),
+                        (value) => setState(() => _activityLevel = value!),
                         Icons.directions_run,
                       ),
                       const SizedBox(height: 30),
@@ -188,18 +200,24 @@ class _TDEECalculatorScreenState extends State<TDEECalculatorScreen> {
                           onPressed: _isLoading ? null : _calculateTDEEAndSugar,
                           icon: _isLoading
                               ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                          )
-                              : const Icon(Icons.calculate, color: Colors.white),
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                      color: Colors.white, strokeWidth: 2),
+                                )
+                              : const Icon(Icons.calculate,
+                                  color: Colors.white),
                           label: Text(
-                            _isLoading ? "Calculating..." : "Calculate TDEE & Sugar",
-                            style: const TextStyle(color: Colors.white, fontSize: 18),
+                            _isLoading
+                                ? "Calculating..."
+                                : "Calculate TDEE & Sugar",
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 18),
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.purpleAccent,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
                             padding: const EdgeInsets.symmetric(vertical: 15),
                             elevation: 5,
                           ),
@@ -207,9 +225,15 @@ class _TDEECalculatorScreenState extends State<TDEECalculatorScreen> {
                       ),
                       const SizedBox(height: 20),
                       if (_tdeeResult > 0) ...[
-                        _buildResultCard("TDEE", "${_tdeeResult.toStringAsFixed(0)} kcal", Colors.purple),
+                        _buildResultCard(
+                            "TDEE",
+                            "${_tdeeResult.toStringAsFixed(0)} kcal",
+                            Colors.purple),
                         const SizedBox(height: 10),
-                        _buildResultCard("Recommended Sugar", "${_sugarRecommendation.toStringAsFixed(1)} g", Colors.deepPurple),
+                        _buildResultCard(
+                            "Recommended Sugar",
+                            "${_sugarRecommendation.toStringAsFixed(1)} g",
+                            Colors.deepPurple),
                       ],
                     ],
                   ),
@@ -223,7 +247,8 @@ class _TDEECalculatorScreenState extends State<TDEECalculatorScreen> {
   }
 
   // Helper method to build text fields
-  Widget _buildTextField(TextEditingController controller, String label, String hint, IconData icon) {
+  Widget _buildTextField(TextEditingController controller, String label,
+      String hint, IconData icon) {
     return TextField(
       controller: controller,
       decoration: InputDecoration(
@@ -241,7 +266,8 @@ class _TDEECalculatorScreenState extends State<TDEECalculatorScreen> {
   }
 
   // Helper method to build dropdown fields
-  Widget _buildDropdownField(String label, String value, List<String> items, Function(String?) onChanged, IconData icon) {
+  Widget _buildDropdownField(String label, String value, List<String> items,
+      Function(String?) onChanged, IconData icon) {
     return DropdownButtonFormField<String>(
       value: value,
       decoration: InputDecoration(
@@ -253,7 +279,9 @@ class _TDEECalculatorScreenState extends State<TDEECalculatorScreen> {
           borderRadius: BorderRadius.circular(10),
         ),
       ),
-      items: items.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(),
+      items: items
+          .map((item) => DropdownMenuItem(value: item, child: Text(item)))
+          .toList(),
       onChanged: onChanged,
     );
   }
@@ -277,9 +305,14 @@ class _TDEECalculatorScreenState extends State<TDEECalculatorScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: const TextStyle(fontSize: 16, color: Colors.black87)),
+            Text(label,
+                style: const TextStyle(fontSize: 16, color: Colors.black87)),
             const SizedBox(height: 5),
-            Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.purple)),
+            Text(value,
+                style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.purple)),
           ],
         ),
       ),

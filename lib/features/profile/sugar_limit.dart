@@ -30,8 +30,12 @@ class _SugarLimitPageState extends State<SugarLimitPage> {
           .get();
       if (doc.exists) {
         setState(() {
-          _currentLimit = "${(doc['sugarLimit'] as num?)?.toStringAsFixed(1) ?? (doc['recommendedSugarIntake'] as num?)?.toStringAsFixed(1) ?? 'Not set'} g";
-          _sugarLimitController.text = (doc['sugarLimit'] as num?)?.toString() ?? (doc['recommendedSugarIntake'] as num?)?.toString() ?? '';
+          _currentLimit =
+              "${(doc['sugarLimit'] as num?)?.toStringAsFixed(1) ?? (doc['recommendedSugarIntake'] as num?)?.toStringAsFixed(1) ?? 'Not set'} g";
+          _sugarLimitController.text =
+              (doc['sugarLimit'] as num?)?.toString() ??
+                  (doc['recommendedSugarIntake'] as num?)?.toString() ??
+                  '';
         });
       }
     }
@@ -41,7 +45,8 @@ class _SugarLimitPageState extends State<SugarLimitPage> {
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please log in to save your sugar limit.")),
+        const SnackBar(
+            content: Text("Please log in to save your sugar limit.")),
       );
       return;
     }
@@ -80,7 +85,8 @@ class _SugarLimitPageState extends State<SugarLimitPage> {
         const SnackBar(content: Text("Sugar limit saved successfully!")),
       );
 
-      HomepageState? homepageState = context.findAncestorStateOfType<HomepageState>();
+      HomepageState? homepageState =
+          context.findAncestorStateOfType<HomepageState>();
       if (homepageState != null) {
         await homepageState.refreshSugarData();
         homepageState.setState(() {}); // Force rebuild of Homepage
@@ -97,57 +103,171 @@ class _SugarLimitPageState extends State<SugarLimitPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          "Set Sugar Limit",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.purple,
+        elevation: 0,
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Colors.purple.withOpacity(0.8),
+              Colors.deepPurple.withOpacity(0.8)
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Center(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Set Daily Sugar Limit",
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.purple,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        "Customize your daily sugar goal",
+                        style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                      ),
+                      const SizedBox(height: 20),
+                      _buildResultCard(
+                          "Current Limit", _currentLimit, Colors.purple),
+                      const SizedBox(height: 20),
+                      _buildTextField(
+                        _sugarLimitController,
+                        "Set Daily Sugar Limit (g)",
+                        "e.g., 50",
+                        Icons.cake,
+                      ),
+                      const SizedBox(height: 30),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _isLoading ? null : _saveSugarLimit,
+                          icon: _isLoading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                      color: Colors.white, strokeWidth: 2),
+                                )
+                              : const Icon(Icons.save, color: Colors.white),
+                          label: Text(
+                            _isLoading ? "Saving..." : "Save Sugar Limit",
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 18),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.purpleAccent,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                            elevation: 5,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            HomepageState? homepageState = context
+                                .findAncestorStateOfType<HomepageState>();
+                            homepageState?.setState(() => homepageState
+                                .myIndex = 2); // Back to ProfilePage
+                          },
+                          icon:
+                              const Icon(Icons.arrow_back, color: Colors.white),
+                          label: const Text(
+                            "Back to Profile",
+                            style: TextStyle(color: Colors.white, fontSize: 18),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.grey,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                            elevation: 5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Helper method to build text fields
+  Widget _buildTextField(TextEditingController controller, String label,
+      String hint, IconData icon) {
+    return TextField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        prefixIcon: Icon(icon, color: Colors.purple),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        focusedBorder: OutlineInputBorder(
+          borderSide: const BorderSide(color: Colors.purpleAccent, width: 2),
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+      keyboardType: TextInputType.number,
+    );
+  }
+
+  // Helper method to build result cards
+  Widget _buildResultCard(String label, String value, Color color) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       child: Container(
-        width: 300,
-        padding: const EdgeInsets.all(16.0),
+        width: double.infinity,
+        padding: const EdgeInsets.all(12.0),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [color.withOpacity(0.1), color.withOpacity(0.3)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(10),
+        ),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "Set Daily Sugar Limit",
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              "Current Daily Sugar Limit: $_currentLimit",
-              style: const TextStyle(fontSize: 18),
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: _sugarLimitController,
-              decoration: const InputDecoration(
-                labelText: "Set Daily Sugar Limit (g)",
-                prefixIcon: Icon(Icons.cake),
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 20),
-            _isLoading
-                ? const CircularProgressIndicator()
-                : ElevatedButton(
-              onPressed: _saveSugarLimit,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blueAccent,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-              ),
-              child: const Text("Save Sugar Limit", style: TextStyle(color: Colors.white)),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                HomepageState? homepageState = context.findAncestorStateOfType<HomepageState>();
-                homepageState?.setState(() => homepageState.myIndex = 2); // Back to ProfilePage
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.grey,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-              ),
-              child: const Text("Back", style: TextStyle(color: Colors.white)),
-            ),
+            Text(label,
+                style: const TextStyle(fontSize: 16, color: Colors.black87)),
+            const SizedBox(height: 5),
+            Text(value,
+                style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.purple)),
           ],
         ),
       ),

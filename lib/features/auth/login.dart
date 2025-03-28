@@ -67,7 +67,8 @@ class _LoginState extends State<Login> {
 
     try {
       await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
-      _showSnackBar("Password reset email sent. Please check your inbox.", Colors.green);
+      _showSnackBar(
+          "Password reset email sent. Please check your inbox.", Colors.green);
     } on FirebaseAuthException catch (e) {
       String errorMessage = "Failed to send reset email.";
       if (e.code == 'invalid-email') {
@@ -108,7 +109,10 @@ class _LoginState extends State<Login> {
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.purple.withOpacity(0.8), Colors.deepPurple.withOpacity(0.8)],
+            colors: [
+              Colors.purple.withOpacity(0.8),
+              Colors.deepPurple.withOpacity(0.8)
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -119,7 +123,8 @@ class _LoginState extends State<Login> {
               padding: const EdgeInsets.all(20.0),
               child: Card(
                 elevation: 4,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
                 child: Padding(
                   padding: const EdgeInsets.all(20.0),
                   child: Column(
@@ -139,7 +144,8 @@ class _LoginState extends State<Login> {
                         style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                       ),
                       const SizedBox(height: 20),
-                      _buildTextField(_emailController, "Email", "e.g., john@example.com", Icons.email),
+                      _buildTextField(_emailController, "Email",
+                          "e.g., john@example.com", Icons.email),
                       const SizedBox(height: 16),
                       _buildTextField(
                         _passwordController,
@@ -149,10 +155,13 @@ class _LoginState extends State<Login> {
                         obscureText: _obscurePassword,
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                            _obscurePassword
+                                ? Icons.visibility
+                                : Icons.visibility_off,
                             color: Colors.purple,
                           ),
-                          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                          onPressed: () => setState(
+                              () => _obscurePassword = !_obscurePassword),
                         ),
                       ),
                       const SizedBox(height: 10),
@@ -177,18 +186,21 @@ class _LoginState extends State<Login> {
                           onPressed: _isLoading ? null : _loginUser,
                           icon: _isLoading
                               ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                          )
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                      color: Colors.white, strokeWidth: 2),
+                                )
                               : const Icon(Icons.login, color: Colors.white),
                           label: Text(
                             _isLoading ? "Logging In..." : "Login",
-                            style: const TextStyle(color: Colors.white, fontSize: 18),
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 18),
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.purpleAccent,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
                             padding: const EdgeInsets.symmetric(vertical: 15),
                             elevation: 5,
                           ),
@@ -227,13 +239,13 @@ class _LoginState extends State<Login> {
 
   // Helper method to build text fields
   Widget _buildTextField(
-      TextEditingController controller,
-      String label,
-      String hint,
-      IconData icon, {
-        bool obscureText = false,
-        Widget? suffixIcon,
-      }) {
+    TextEditingController controller,
+    String label,
+    String hint,
+    IconData icon, {
+    bool obscureText = false,
+    Widget? suffixIcon,
+  }) {
     return TextField(
       controller: controller,
       decoration: InputDecoration(
@@ -247,7 +259,8 @@ class _LoginState extends State<Login> {
           borderRadius: BorderRadius.circular(10),
         ),
       ),
-      keyboardType: label == "Email" ? TextInputType.emailAddress : TextInputType.text,
+      keyboardType:
+          label == "Email" ? TextInputType.emailAddress : TextInputType.text,
       obscureText: obscureText,
     );
   }

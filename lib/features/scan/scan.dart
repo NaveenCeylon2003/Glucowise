@@ -7,7 +7,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:file_picker/file_picker.dart'; // Add file_picker
+import 'package:file_picker/file_picker.dart';
 
 class ScanPage extends StatefulWidget {
   const ScanPage({super.key});
@@ -46,14 +46,15 @@ class _ScanPageState extends State<ScanPage> {
   Future<void> _saveToFirestore(String key, String foodName, double? sugarContent) async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please log in to save food data.")),
-      );
+      _showSnackBar("Please log in to save food data.");
       return;
     }
 
     try {
       String docId = "${key.toLowerCase()}_${DateTime.now().millisecondsSinceEpoch}";
+      String today = DateTime.now().toString().split(' ')[0];
+
+      // Save to scanned_foods collection
       await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -66,11 +67,23 @@ class _ScanPageState extends State<ScanPage> {
         'timestamp': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
-      print("Saved to Firestore (scanned_foods): $docId - Sugar: $sugarContent");
+      // Increment total sugar in daily_summaries (assuming sugarContent is per 100g, adjust if needed)
+      if (sugarContent != null) {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .collection('daily_summaries')
+            .doc(today)
+            .set({
+          'totalSugar': FieldValue.increment(sugarContent),
+          'date': today,
+          'timestamp': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      }
+
+      _showSnackBar("Food data saved successfully!", Colors.green);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error saving to Firestore: $e")),
-      );
+      _showSnackBar("Error saving to Firestore: $e", Colors.red);
     }
   }
 
@@ -82,11 +95,10 @@ class _ScanPageState extends State<ScanPage> {
 
     try {
       if (!kIsWeb) {
-        // Mobile: Use camera to scan barcode
         String barcode = await FlutterBarcodeScanner.scanBarcode(
-          "#ff6666", // Overlay color
-          "Cancel", // Cancel button text
-          true, // Show flash icon
+          "#ff6666",
+          "Cancel",
+          true,
           ScanMode.BARCODE,
         );
 
@@ -99,7 +111,6 @@ class _ScanPageState extends State<ScanPage> {
         }
         await _processBarcode(barcode);
       } else {
-        // Web: Use file picker to upload an image
         await _uploadImageForWeb();
       }
     } catch (e) {
@@ -126,8 +137,7 @@ class _ScanPageState extends State<ScanPage> {
           _sugarContent = "Image uploaded. Barcode detection not implemented.";
           _foodName = "Image-based Product";
         });
-        // TODO: Add barcode detection from image (e.g., using google_ml_kit)
-        // For now, we just acknowledge the upload
+        // TODO: Implement barcode detection from image (e.g., google_ml_kit)
       } else {
         setState(() {
           _sugarContent = "No image selected.";
@@ -141,7 +151,6 @@ class _ScanPageState extends State<ScanPage> {
   }
 
   Future<void> _processBarcode(String barcode) async {
-    // Check cached data first
     final cachedData = await _getCachedFoodData(barcode);
     if (cachedData != null) {
       setState(() {
@@ -155,7 +164,6 @@ class _ScanPageState extends State<ScanPage> {
       return;
     }
 
-    // Check connectivity
     var connectivityResult = await Connectivity().checkConnectivity();
     if (connectivityResult == ConnectivityResult.none) {
       setState(() {
@@ -164,7 +172,6 @@ class _ScanPageState extends State<ScanPage> {
       return;
     }
 
-    // Fetch data from OpenFoodFacts API
     String apiUrl = "https://world.openfoodfacts.org/api/v0/product/$barcode.json";
     var response = await http.get(Uri.parse(apiUrl));
 
@@ -194,63 +201,141 @@ class _ScanPageState extends State<ScanPage> {
     }
   }
 
+  void _showSnackBar(String message, [Color? backgroundColor]) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: backgroundColor ?? Colors.grey,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Scan Barcode")),
-      body: Center(
-        child: Container(
-          width: 300,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                _sugarContent,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 18),
-              ),
-              const SizedBox(height: 20),
-              if (_foodName != "Unknown Product")
-                Text(
-                  "Product: $_foodName",
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              const SizedBox(height: 30),
-              _isLoading
-                  ? const CircularProgressIndicator()
-                  : ElevatedButton(
-                onPressed: _scanBarcode,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                ),
-                child: Text(
-                  kIsWeb ? "Upload Image" : "Scan Barcode",
-                  style: const TextStyle(color: Colors.white),
-                ),
-              ),
-              const SizedBox(height: 30),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context); // Simple back navigation
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.grey,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                ),
-                child: const Text(
-                  "Back",
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-            ],
+      appBar: AppBar(
+        title: const Text(
+          "Scan Barcode",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.purple,
+        elevation: 0,
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.purple.withOpacity(0.8), Colors.deepPurple.withOpacity(0.8)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
+        ),
+        child: Center(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Scan Your Food",
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.purple,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        kIsWeb ? "Upload an image to scan" : "Scan a barcode to get started",
+                        style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                      ),
+                      const SizedBox(height: 20),
+                      if (_foodName != "Unknown Product")
+                        _buildResultCard("Product", _foodName, Colors.purple),
+                      const SizedBox(height: 10),
+                      _buildResultCard("Sugar Info", _sugarContent, Colors.deepPurple),
+                      const SizedBox(height: 30),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _isLoading ? null : _scanBarcode,
+                          icon: _isLoading
+                              ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          )
+                              : Icon(kIsWeb ? Icons.upload : Icons.qr_code_scanner, color: Colors.white),
+                          label: Text(
+                            _isLoading ? "Processing..." : (kIsWeb ? "Upload Image" : "Scan Barcode"),
+                            style: const TextStyle(color: Colors.white, fontSize: 18),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.purpleAccent,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                            elevation: 5,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () => Navigator.pop(context),
+                          icon: const Icon(Icons.arrow_back, color: Colors.white),
+                          label: const Text(
+                            "Back",
+                            style: TextStyle(color: Colors.white, fontSize: 18),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.grey,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                            elevation: 5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Helper method to build result cards
+  Widget _buildResultCard(String label, String value, Color color) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12.0),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [color.withOpacity(0.1), color.withOpacity(0.3)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: const TextStyle(fontSize: 16, color: Colors.black87)),
+            const SizedBox(height: 5),
+            Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.purple)),
+          ],
         ),
       ),
     );

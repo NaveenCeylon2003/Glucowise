@@ -52,7 +52,8 @@ class Homescreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    HomepageState? homepageState = context.findAncestorStateOfType<HomepageState>();
+    HomepageState? homepageState =
+    context.findAncestorStateOfType<HomepageState>();
     double totalSugar = homepageState?.totalScannedSugar ?? 0.0;
     double dailyLimit = homepageState?.dailySugarLimit ?? 0.0;
     double remainingSugar = dailyLimit - totalSugar;
@@ -60,7 +61,8 @@ class Homescreen extends StatelessWidget {
     if (progress > 1.0) progress = 1.0;
     if (progress < 0.0) progress = 0.0;
 
-    print("Homescreen build - Daily Limit: $dailyLimit, Total Sugar: $totalSugar, Remaining: $remainingSugar, Progress: $progress");
+    print(
+        "Homescreen build - Daily Limit: $dailyLimit, Total Sugar: $totalSugar, Remaining: $remainingSugar, Progress: $progress");
 
     return SingleChildScrollView(
       child: Padding(
@@ -97,11 +99,17 @@ class Homescreen extends StatelessWidget {
                   height: 200,
                   width: 200,
                   child: CircularProgressIndicator(
-                    value: progress,
+                    value: dailyLimit == 0.0 ? 0.0 : progress,
                     strokeWidth: 12,
                     backgroundColor: Colors.grey[300],
                     valueColor: AlwaysStoppedAnimation<Color>(
-                      progress < 0.7 ? Colors.green : progress < 1.0 ? Colors.orange : Colors.red,
+                      dailyLimit == 0.0
+                          ? Colors.grey
+                          : progress < 0.7
+                          ? Colors.green
+                          : progress < 1.0
+                          ? Colors.orange
+                          : Colors.red,
                     ),
                   ),
                 ),
@@ -109,8 +117,11 @@ class Homescreen extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      dailyLimit == 0.0 ? "Set Limit" : "${remainingSugar >= 0 ? remainingSugar.toStringAsFixed(1) : 0.0} g",
-                      style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                      dailyLimit == 0.0
+                          ? "Set Limit"
+                          : "${remainingSugar >= 0 ? remainingSugar.toStringAsFixed(1) : 0.0} g",
+                      style: const TextStyle(
+                          fontSize: 32, fontWeight: FontWeight.bold),
                     ),
                     Text(
                       dailyLimit == 0.0 ? "to Start" : "Remaining",
@@ -124,8 +135,13 @@ class Homescreen extends StatelessWidget {
 
             // Motivational Message
             Text(
-              dailyLimit == 0.0 ? "Set a sugar limit to begin!" : _getMotivationalMessage(progress),
-              style: const TextStyle(fontSize: 18, fontStyle: FontStyle.italic, color: Colors.purple),
+              dailyLimit == 0.0
+                  ? "Set a sugar limit to begin!"
+                  : _getMotivationalMessage(progress),
+              style: const TextStyle(
+                  fontSize: 18,
+                  fontStyle: FontStyle.italic,
+                  color: Colors.purple),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 30),
@@ -134,8 +150,16 @@ class Homescreen extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildStatCard("Today's Intake", "${totalSugar.toStringAsFixed(1)} g", Icons.fastfood, Colors.purpleAccent),
-                _buildStatCard("Daily Limit", "${dailyLimit.toStringAsFixed(1)} g", Icons.speed, Colors.purple),
+                _buildStatCard(
+                    "Today's Intake",
+                    "${totalSugar.toStringAsFixed(1)} g",
+                    Icons.fastfood,
+                    Colors.purpleAccent),
+                _buildStatCard(
+                    "Daily Limit",
+                    "${dailyLimit.toStringAsFixed(1)} g",
+                    Icons.speed,
+                    Colors.purple),
               ],
             ),
             const SizedBox(height: 30),
@@ -148,11 +172,14 @@ class Homescreen extends StatelessWidget {
                 });
               },
               icon: const Icon(Icons.qr_code_scanner, color: Colors.white),
-              label: const Text("Scan Now", style: TextStyle(color: Colors.white)),
+              label:
+              const Text("Scan Now", style: TextStyle(color: Colors.white)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.purple,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                padding:
+                const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
                 elevation: 5,
               ),
             ),
@@ -162,18 +189,22 @@ class Homescreen extends StatelessWidget {
               children: [
                 TextButton.icon(
                   onPressed: () {
-                    homepageState?.setState(() => homepageState.myIndex = 1); // Insights
+                    homepageState
+                        ?.setState(() => homepageState.myIndex = 1); // Insights
                   },
                   icon: const Icon(Icons.insights, color: Colors.purple),
-                  label: const Text("View Insights", style: TextStyle(color: Colors.purple)),
+                  label: const Text("View Insights",
+                      style: TextStyle(color: Colors.purple)),
                 ),
                 const SizedBox(width: 20),
                 TextButton.icon(
                   onPressed: () {
-                    homepageState?.setState(() => homepageState.myIndex = 10); // Sugar Limit
+                    homepageState?.setState(
+                            () => homepageState.myIndex = 10); // Sugar Limit
                   },
                   icon: const Icon(Icons.settings, color: Colors.purple),
-                  label: const Text("Set Limit", style: TextStyle(color: Colors.purple)),
+                  label: const Text("Set Limit",
+                      style: TextStyle(color: Colors.purple)),
                 ),
               ],
             ),
@@ -184,7 +215,8 @@ class Homescreen extends StatelessWidget {
   }
 
   // Helper to build stat cards
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+      String title, String value, IconData icon, Color color) {
     return Card(
       elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -203,9 +235,12 @@ class Homescreen extends StatelessWidget {
           children: [
             Icon(icon, color: color, size: 30),
             const SizedBox(height: 10),
-            Text(title, style: TextStyle(fontSize: 16, color: Colors.grey[700])),
+            Text(title,
+                style: TextStyle(fontSize: 16, color: Colors.grey[700])),
             const SizedBox(height: 5),
-            Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text(value,
+                style:
+                const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
           ],
         ),
       ),
@@ -225,31 +260,40 @@ class HomepageState extends State<Homepage> {
   double dailySugarLimit = 0.0;
   double totalScannedSugar = 0.0;
   StreamSubscription<DocumentSnapshot>? _summarySubscription;
+  StreamSubscription<DocumentSnapshot>? _userDocSubscription;
+  bool _isLoading = true;
 
   List<Widget> widgetList = [
-    const Homeroutes(),              // 0: Home
-    const Insights(),               // 1: Insights
-    const ProfilePage(),            // 2: Profile
-    const Scanoptions(),            // 3: Scan Options
-    const ScanPage(),              // 4: Scan Page
-    const BarcodeEntryPage(),      // 5: Barcode Entry
-    const UpdateAccountScreen(),   // 6: Update Account
-    const ChangeEmailScreen(),     // 7: Change Email
-    const LogoutScreen(),          // 8: Logout
-    const FoodSearchPage(),         // 9: Food Search Page
-    const SugarLimitPage(),         // 10: Sugar Limit Page
+    const Homeroutes(), // 0: Home
+    const Insights(), // 1: Insights
+    const ProfilePage(), // 2: Profile
+    const Scanoptions(), // 3: Scan Options
+    const ScanPage(), // 4: Scan Page
+    const BarcodeEntryPage(), // 5: Barcode Entry
+    const UpdateAccountScreen(), // 6: Update Account
+    const ChangeEmailScreen(), // 7: Change Email
+    const LogoutScreen(), // 8: Logout
+    const FoodSearchPage(), // 9: Food Search Page
+    const SugarLimitPage(), // 10: Sugar Limit Page
   ];
 
   @override
   void initState() {
     super.initState();
     _loadCachedData();
-    _listenToSugarData();
+    _initializeData();
+  }
+
+  Future<void> _initializeData() async {
+    setState(() => _isLoading = true);
+    await _listenToSugarData();
+    setState(() => _isLoading = false);
   }
 
   @override
   void dispose() {
     _summarySubscription?.cancel();
+    _userDocSubscription?.cancel();
     super.dispose();
   }
 
@@ -258,7 +302,8 @@ class HomepageState extends State<Homepage> {
     setState(() {
       dailySugarLimit = prefs.getDouble('dailySugarLimit') ?? 0.0;
       totalScannedSugar = prefs.getDouble('totalScannedSugar') ?? 0.0;
-      print("Loaded from cache - Daily Limit: $dailySugarLimit, Total Sugar: $totalScannedSugar");
+      print(
+          "Loaded from cache - Daily Limit: $dailySugarLimit, Total Sugar: $totalScannedSugar");
     });
   }
 
@@ -266,39 +311,61 @@ class HomepageState extends State<Homepage> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setDouble('dailySugarLimit', dailySugarLimit);
     await prefs.setDouble('totalScannedSugar', totalScannedSugar);
-    print("Saved to cache - Daily Limit: $dailySugarLimit, Total Sugar: $totalScannedSugar");
+    print(
+        "Saved to cache - Daily Limit: $dailySugarLimit, Total Sugar: $totalScannedSugar");
   }
 
-  void _listenToSugarData() {
+  Future<void> _listenToSugarData() async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      print("No user logged in, using defaults");
+      print("No user logged in, redirecting to login");
       setState(() {
         dailySugarLimit = 0.0;
         totalScannedSugar = 0.0;
       });
-      _saveCachedData();
+      await _saveCachedData();
+      Navigator.pushReplacementNamed(context, "login");
       return;
     }
 
-    FirebaseFirestore.instance
+    // Listener for user document (sugarLimit)
+    _userDocSubscription?.cancel();
+    _userDocSubscription = FirebaseFirestore.instance
         .collection('users')
         .doc(user.uid)
-        .get()
-        .then((userDoc) {
-      double limit = (userDoc['sugarLimit'] as num?)?.toDouble() ??
-          (userDoc['recommendedSugarIntake'] as num?)?.toDouble() ??
-          0.0;
+        .snapshots()
+        .listen((userDoc) {
+      if (userDoc.exists) {
+        double limit = (userDoc['sugarLimit'] as num?)?.toDouble() ??
+            (userDoc['recommendedSugarIntake'] as num?)?.toDouble() ??
+            0.0;
+        setState(() {
+          dailySugarLimit = limit;
+          print("Real-time update - Sugar Limit: $dailySugarLimit");
+        });
+        _saveCachedData();
+      } else {
+        setState(() {
+          dailySugarLimit = 50.0;
+          print("No user document found, setting default sugar limit: $dailySugarLimit");
+        });
+        FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+          'sugarLimit': dailySugarLimit,
+          'timestamp': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+        _saveCachedData();
+      }
+    }, onError: (e) {
+      print("Error fetching sugar limit: $e");
       setState(() {
-        dailySugarLimit = limit;
-        print("Loaded sugar limit from Firestore: $dailySugarLimit");
+        dailySugarLimit = 50.0;
       });
       _saveCachedData();
-    }).catchError((e) {
-      print("Error fetching sugar limit: $e");
     });
 
+    // Listener for daily summaries (totalScannedSugar)
     String today = DateTime.now().toString().split(' ')[0];
+    _summarySubscription?.cancel();
     _summarySubscription = FirebaseFirestore.instance
         .collection('users')
         .doc(user.uid)
@@ -322,11 +389,15 @@ class HomepageState extends State<Homepage> {
       }
     }, onError: (e) {
       print("Error in real-time listener: $e");
+      setState(() {
+        totalScannedSugar = 0.0;
+      });
+      _saveCachedData();
     });
   }
 
   Future<void> refreshSugarData() async {
-    _listenToSugarData();
+    await _listenToSugarData();
   }
 
   Future<void> _saveDailySummary() async {
@@ -353,13 +424,16 @@ class HomepageState extends State<Homepage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(index: myIndex, children: widgetList),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : IndexedStack(index: myIndex, children: widgetList),
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: Colors.purple,
         currentIndex: myIndex > 2 ? 0 : myIndex,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.add_chart), label: 'Insights'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.add_chart), label: 'Insights'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
         onTap: (index) {

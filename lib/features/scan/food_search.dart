@@ -18,7 +18,8 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
   String _sugarContent = "Enter a food name to fetch sugar content";
   String _foodName = "Unknown Product";
   final TextEditingController _searchController = TextEditingController();
-  final TextEditingController _amountConsumedController = TextEditingController();
+  final TextEditingController _amountConsumedController =
+      TextEditingController();
   bool _isLoading = false;
 
   Future<SharedPreferences> _getPrefs() async {
@@ -34,7 +35,12 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
     return null;
   }
 
-  Future<void> _saveToSharedPreferences(String key, String foodName, double? sugarPer100g, double? sugarConsumed, double? amountConsumed) async {
+  Future<void> _saveToSharedPreferences(
+      String key,
+      String foodName,
+      double? sugarPer100g,
+      double? sugarConsumed,
+      double? amountConsumed) async {
     final prefs = await _getPrefs();
     final data = {
       'foodName': foodName,
@@ -45,7 +51,12 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
     await prefs.setString(key.toLowerCase(), jsonEncode(data));
   }
 
-  Future<void> _saveToFirestore(String key, String foodName, double? sugarPer100g, double? sugarConsumed, double? amountConsumed) async {
+  Future<void> _saveToFirestore(
+      String key,
+      String foodName,
+      double? sugarPer100g,
+      double? sugarConsumed,
+      double? amountConsumed) async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       _showSnackBar("Please log in to save food data.");
@@ -53,7 +64,8 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
     }
 
     try {
-      String docId = "${key.toLowerCase()}_${DateTime.now().millisecondsSinceEpoch}";
+      String docId =
+          "${key.toLowerCase()}_${DateTime.now().millisecondsSinceEpoch}";
       String today = DateTime.now().toString().split(' ')[0];
 
       await FirebaseFirestore.instance
@@ -129,8 +141,10 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
         if (response.statusCode == 200) {
           var data = jsonDecode(response.body);
           if (data["products"] != null && data["products"].isNotEmpty) {
-            _foodName = data["products"][0]["product_name"] ?? "Unknown Product";
-            double? sugarPer100g = data["products"][0]["nutriments"]?["sugars_100g"]?.toDouble();
+            _foodName =
+                data["products"][0]["product_name"] ?? "Unknown Product";
+            double? sugarPer100g =
+                data["products"][0]["nutriments"]?["sugars_100g"]?.toDouble();
 
             double? sugarConsumed;
             if (sugarPer100g != null) {
@@ -143,8 +157,10 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
                   : "Sugar data not available for $_foodName";
             });
 
-            await _saveToSharedPreferences(foodQuery, _foodName, sugarPer100g, sugarConsumed, amountConsumed);
-            await _saveToFirestore(foodQuery, _foodName, sugarPer100g, sugarConsumed, amountConsumed);
+            await _saveToSharedPreferences(foodQuery, _foodName, sugarPer100g,
+                sugarConsumed, amountConsumed);
+            await _saveToFirestore(foodQuery, _foodName, sugarPer100g,
+                sugarConsumed, amountConsumed);
             _showSnackBar("Food data saved successfully!", Colors.green);
           } else {
             setState(() {
@@ -153,7 +169,8 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
           }
         } else {
           setState(() {
-            _sugarContent = "Error: Failed to fetch data (Status: ${response.statusCode})";
+            _sugarContent =
+                "Error: Failed to fetch data (Status: ${response.statusCode})";
           });
         }
       } else {
@@ -164,18 +181,24 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
             final sugarPer100g = cachedData['sugarPer100g'] as double?;
             if (sugarPer100g != null) {
               final sugarConsumed = (sugarPer100g / 100) * amountConsumed;
-              _sugarContent = "Sugar consumed: ${sugarConsumed.toStringAsFixed(1)} g (cached)\n(Sugar per 100g: $sugarPer100g g)";
+              _sugarContent =
+                  "Sugar consumed: ${sugarConsumed.toStringAsFixed(1)} g (cached)\n(Sugar per 100g: $sugarPer100g g)";
             } else {
-              _sugarContent = "Sugar data not available for $_foodName (cached)";
+              _sugarContent =
+                  "Sugar data not available for $_foodName (cached)";
             }
           });
           final sugarPer100g = cachedData['sugarPer100g'] as double?;
-          final sugarConsumed = sugarPer100g != null ? (sugarPer100g / 100) * amountConsumed : null;
-          await _saveToFirestore(foodQuery, _foodName, sugarPer100g, sugarConsumed, amountConsumed);
+          final sugarConsumed = sugarPer100g != null
+              ? (sugarPer100g / 100) * amountConsumed
+              : null;
+          await _saveToFirestore(foodQuery, _foodName, sugarPer100g,
+              sugarConsumed, amountConsumed);
           _showSnackBar("Loaded cached data.", Colors.green);
         } else {
           setState(() {
-            _sugarContent = "No network connection and no cached data available.";
+            _sugarContent =
+                "No network connection and no cached data available.";
           });
         }
       }
@@ -213,7 +236,10 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.purple.withOpacity(0.8), Colors.deepPurple.withOpacity(0.8)],
+            colors: [
+              Colors.purple.withOpacity(0.8),
+              Colors.deepPurple.withOpacity(0.8)
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -224,7 +250,8 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
               padding: const EdgeInsets.all(16.0),
               child: Card(
                 elevation: 4,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
                 child: Padding(
                   padding: const EdgeInsets.all(20.0),
                   child: Column(
@@ -247,11 +274,14 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
                       if (_foodName != "Unknown Product")
                         _buildResultCard("Product", _foodName, Colors.purple),
                       const SizedBox(height: 10),
-                      _buildResultCard("Sugar Info", _sugarContent, Colors.deepPurple),
+                      _buildResultCard(
+                          "Sugar Info", _sugarContent, Colors.deepPurple),
                       const SizedBox(height: 20),
-                      _buildTextField(_searchController, "Enter Food Name", "e.g., Apple", Icons.search),
+                      _buildTextField(_searchController, "Enter Food Name",
+                          "e.g., Apple", Icons.search),
                       const SizedBox(height: 16),
-                      _buildTextField(_amountConsumedController, "Amount Consumed (g)", "e.g., 100", Icons.fastfood),
+                      _buildTextField(_amountConsumedController,
+                          "Amount Consumed (g)", "e.g., 100", Icons.fastfood),
                       const SizedBox(height: 30),
                       SizedBox(
                         width: double.infinity,
@@ -259,18 +289,23 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
                           onPressed: _isLoading ? null : _searchProduct,
                           icon: _isLoading
                               ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                          )
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                      color: Colors.white, strokeWidth: 2),
+                                )
                               : const Icon(Icons.search, color: Colors.white),
                           label: Text(
-                            _isLoading ? "Searching..." : "Calculate Sugar Content",
-                            style: const TextStyle(color: Colors.white, fontSize: 18),
+                            _isLoading
+                                ? "Searching..."
+                                : "Calculate Sugar Content",
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 18),
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.purpleAccent,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
                             padding: const EdgeInsets.symmetric(vertical: 15),
                             elevation: 5,
                           ),
@@ -281,20 +316,24 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
                         width: double.infinity,
                         child: ElevatedButton.icon(
                           onPressed: () async {
-                            HomepageState? homepageState = context.findAncestorStateOfType<HomepageState>();
+                            HomepageState? homepageState = context
+                                .findAncestorStateOfType<HomepageState>();
                             if (homepageState != null) {
                               await homepageState.refreshSugarData();
-                              homepageState.setState(() => homepageState.myIndex = 0);
+                              homepageState
+                                  .setState(() => homepageState.myIndex = 0);
                             }
                           },
-                          icon: const Icon(Icons.arrow_back, color: Colors.white),
+                          icon:
+                              const Icon(Icons.arrow_back, color: Colors.white),
                           label: const Text(
                             "Back to Home",
                             style: TextStyle(color: Colors.white, fontSize: 18),
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.grey,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
                             padding: const EdgeInsets.symmetric(vertical: 15),
                             elevation: 5,
                           ),
@@ -312,7 +351,8 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
   }
 
   // Helper method to build text fields
-  Widget _buildTextField(TextEditingController controller, String label, String hint, IconData icon) {
+  Widget _buildTextField(TextEditingController controller, String label,
+      String hint, IconData icon) {
     return TextField(
       controller: controller,
       decoration: InputDecoration(
@@ -325,7 +365,8 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
           borderRadius: BorderRadius.circular(10),
         ),
       ),
-      keyboardType: label.contains("Amount") ? TextInputType.number : TextInputType.text,
+      keyboardType:
+          label.contains("Amount") ? TextInputType.number : TextInputType.text,
     );
   }
 
@@ -348,9 +389,14 @@ class _FoodSearchPageState extends State<FoodSearchPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: const TextStyle(fontSize: 16, color: Colors.black87)),
+            Text(label,
+                style: const TextStyle(fontSize: 16, color: Colors.black87)),
             const SizedBox(height: 5),
-            Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.purple)),
+            Text(value,
+                style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.purple)),
           ],
         ),
       ),

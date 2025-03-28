@@ -8,7 +8,8 @@ class SplashScreen extends StatefulWidget {
   _SplashScreenState createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
@@ -53,7 +54,10 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.purple.withOpacity(0.8), Colors.deepPurple.withOpacity(0.8)],
+            colors: [
+              Colors.purple.withOpacity(0.8),
+              Colors.deepPurple.withOpacity(0.8)
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -79,7 +83,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                     ],
                   ),
                   child: const Icon(
-                    Icons.health_and_safety, // Replace with your app's icon if available
+                    Icons
+                        .health_and_safety, // Replace with your app's icon if available
                     size: 100,
                     color: Colors.white,
                   ),
@@ -108,7 +113,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                 const SizedBox(height: 30),
                 // Loading Indicator with Custom Style
                 CircularProgressIndicator(
-                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.purpleAccent),
+                  valueColor:
+                      const AlwaysStoppedAnimation<Color>(Colors.purpleAccent),
                   backgroundColor: Colors.white.withOpacity(0.3),
                   strokeWidth: 6,
                 ),

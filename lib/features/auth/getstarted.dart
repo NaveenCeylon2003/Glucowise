@@ -9,7 +9,10 @@ class Start extends StatelessWidget {
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.purple.withOpacity(0.8), Colors.deepPurple.withOpacity(0.8)],
+            colors: [
+              Colors.purple.withOpacity(0.8),
+              Colors.deepPurple.withOpacity(0.8)
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -65,7 +68,7 @@ class Start extends StatelessWidget {
                     "Login",
                     Colors.purpleAccent,
                     Icons.login,
-                        () => Navigator.pushNamed(context, "login"),
+                    () => Navigator.pushNamed(context, "login"),
                   ),
                   const SizedBox(height: 20),
 
@@ -75,7 +78,7 @@ class Start extends StatelessWidget {
                     "Sign Up",
                     Colors.deepPurple,
                     Icons.person_add,
-                        () => Navigator.pushNamed(context, "signup"),
+                    () => Navigator.pushNamed(context, "signup"),
                   ),
                 ],
               ),
@@ -88,12 +91,12 @@ class Start extends StatelessWidget {
 
   // Helper method to build action buttons
   Widget _buildActionButton(
-      BuildContext context,
-      String label,
-      Color color,
-      IconData icon,
-      VoidCallback onPressed,
-      ) {
+    BuildContext context,
+    String label,
+    Color color,
+    IconData icon,
+    VoidCallback onPressed,
+  ) {
     return SizedBox(
       width: 250,
       child: ElevatedButton.icon(
@@ -109,7 +112,8 @@ class Start extends StatelessWidget {
         ),
         style: ElevatedButton.styleFrom(
           backgroundColor: color,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
           elevation: 5,
           shadowColor: Colors.black.withOpacity(0.3),

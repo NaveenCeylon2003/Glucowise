@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:g21285878naveen/features/home/home.dart'; // For navigation
+import 'package:g21285878naveen/features/home/home.dart';
 
 class UpdateAccountScreen extends StatefulWidget {
   const UpdateAccountScreen({super.key});
@@ -34,7 +34,6 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
     _loadUserData();
   }
 
-  // Load existing user data from Firestore
   Future<void> _loadUserData() async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user != null) {
@@ -45,7 +44,8 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
             .get();
         if (doc.exists) {
           setState(() {
-            _usernameController.text = doc['username'] as String? ?? user.displayName ?? '';
+            _usernameController.text =
+                doc['username'] as String? ?? user.displayName ?? '';
             _heightController.text = (doc['height'] as num?)?.toString() ?? '';
             _weightController.text = (doc['weight'] as num?)?.toString() ?? '';
             _ageController.text = (doc['age'] as num?)?.toString() ?? '';
@@ -61,7 +61,6 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
     }
   }
 
-  // Save updated user data to Firestore
   Future<void> _updateUserData() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
@@ -73,13 +72,22 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
           double? weight = double.tryParse(_weightController.text.trim());
           int? age = int.tryParse(_ageController.text.trim());
 
-          if (height == null || weight == null || age == null || height <= 0 || weight <= 0 || age <= 0) {
-            _showSnackBar("Please enter valid positive numbers for height, weight, and age.");
+          if (height == null ||
+              weight == null ||
+              age == null ||
+              height <= 0 ||
+              weight <= 0 ||
+              age <= 0) {
+            _showSnackBar(
+                "Please enter valid positive numbers for height, weight, and age.");
             setState(() => _isLoading = false);
             return;
           }
 
-          await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .set({
             'username': _usernameController.text.trim(),
             'height': height,
             'weight': weight,
@@ -91,8 +99,8 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
 
           _showSnackBar("Account updated successfully.");
 
-          // Navigate back to ProfilePage (index 2)
-          HomepageState? homepageState = context.findAncestorStateOfType<HomepageState>();
+          HomepageState? homepageState =
+              context.findAncestorStateOfType<HomepageState>();
           homepageState?.setState(() => homepageState.myIndex = 2);
         } catch (e) {
           _showSnackBar("Error updating account: $e");
@@ -117,163 +125,136 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
   }
 
   @override
-  void dispose() {
-    _usernameController.dispose();
-    _heightController.dispose();
-    _weightController.dispose();
-    _ageController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Update Account"),
-        backgroundColor: Colors.blueAccent,
+        title: const Text(
+          "Update Account",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.purple,
+        elevation: 0,
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Center(
-            child: Container(
-              width: 300,
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    const Text(
-                      "Update Account",
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 20),
-                    TextFormField(
-                      controller: _usernameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Username',
-                        hintText: 'Enter your username',
-                        border: OutlineInputBorder(),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Colors.purple.withOpacity(0.8),
+              Colors.deepPurple.withOpacity(0.8)
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Update Your Account",
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.purple,
+                        ),
                       ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return "Please enter a username.";
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16.0),
-                    TextFormField(
-                      controller: _heightController,
-                      decoration: const InputDecoration(
-                        labelText: 'Height (cm)',
-                        hintText: 'Enter your height in centimeters',
-                        border: OutlineInputBorder(),
+                      const SizedBox(height: 5),
+                      Text(
+                        "Edit your profile details",
+                        style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                       ),
-                      keyboardType: TextInputType.number,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return "Please enter your height.";
-                        }
-                        if (double.tryParse(value) == null || double.parse(value) <= 0) {
-                          return "Enter a valid positive number.";
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16.0),
-                    TextFormField(
-                      controller: _weightController,
-                      decoration: const InputDecoration(
-                        labelText: 'Weight (kg)',
-                        hintText: 'Enter your weight in kilograms',
-                        border: OutlineInputBorder(),
+                      const SizedBox(height: 20),
+                      _buildTextField(_usernameController, "Username",
+                          "Enter your username", Icons.person),
+                      const SizedBox(height: 16),
+                      _buildTextField(_heightController, "Height (cm)",
+                          "e.g., 170", Icons.height),
+                      const SizedBox(height: 16),
+                      _buildTextField(_weightController, "Weight (kg)",
+                          "e.g., 70", Icons.fitness_center),
+                      const SizedBox(height: 16),
+                      _buildTextField(_ageController, "Age (years)", "e.g., 30",
+                          Icons.cake),
+                      const SizedBox(height: 16),
+                      _buildDropdownField(
+                        "Gender",
+                        _gender,
+                        ['Male', 'Female'],
+                        (value) => setState(() => _gender = value!),
+                        Icons.people_alt,
                       ),
-                      keyboardType: TextInputType.number,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return "Please enter your weight.";
-                        }
-                        if (double.tryParse(value) == null || double.parse(value) <= 0) {
-                          return "Enter a valid positive number.";
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16.0),
-                    TextFormField(
-                      controller: _ageController,
-                      decoration: const InputDecoration(
-                        labelText: 'Age (years)',
-                        hintText: 'Enter your age',
-                        border: OutlineInputBorder(),
+                      const SizedBox(height: 16),
+                      _buildDropdownField(
+                        "Activity Level",
+                        _activityLevel,
+                        _activityMultipliers.keys.toList(),
+                        (value) => setState(() => _activityLevel = value!),
+                        Icons.directions_run,
                       ),
-                      keyboardType: TextInputType.number,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return "Please enter your age.";
-                        }
-                        if (int.tryParse(value) == null || int.parse(value) <= 0) {
-                          return "Enter a valid positive number.";
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16.0),
-                    DropdownButtonFormField<String>(
-                      value: _gender,
-                      decoration: const InputDecoration(
-                        labelText: 'Gender',
-                        border: OutlineInputBorder(),
+                      const SizedBox(height: 30),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _isLoading ? null : _updateUserData,
+                          icon: _isLoading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                      color: Colors.white, strokeWidth: 2),
+                                )
+                              : const Icon(Icons.update, color: Colors.white),
+                          label: Text(
+                            _isLoading ? "Updating..." : "Update Account",
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 18),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.purpleAccent,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                            elevation: 5,
+                          ),
+                        ),
                       ),
-                      items: ['Male', 'Female']
-                          .map((gender) => DropdownMenuItem(value: gender, child: Text(gender)))
-                          .toList(),
-                      onChanged: (value) => setState(() => _gender = value!),
-                    ),
-                    const SizedBox(height: 16.0),
-                    DropdownButtonFormField<String>(
-                      value: _activityLevel,
-                      decoration: const InputDecoration(
-                        labelText: 'Activity Level',
-                        border: OutlineInputBorder(),
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            HomepageState? homepageState = context
+                                .findAncestorStateOfType<HomepageState>();
+                            homepageState
+                                ?.setState(() => homepageState.myIndex = 2);
+                          },
+                          icon:
+                              const Icon(Icons.arrow_back, color: Colors.white),
+                          label: const Text(
+                            "Back to Profile",
+                            style: TextStyle(color: Colors.white, fontSize: 18),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.grey,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(vertical: 15),
+                            elevation: 5,
+                          ),
+                        ),
                       ),
-                      items: _activityMultipliers.keys
-                          .map((level) => DropdownMenuItem(value: level, child: Text(level)))
-                          .toList(),
-                      onChanged: (value) => setState(() => _activityLevel = value!),
-                    ),
-                    const SizedBox(height: 20.0),
-                    _isLoading
-                        ? const CircularProgressIndicator()
-                        : ElevatedButton(
-                      onPressed: _updateUserData,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blueAccent,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                      ),
-                      child: const Text(
-                        "Update Account",
-                        style: TextStyle(color: Colors.white, fontSize: 16),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: () {
-                        HomepageState? homepageState = context.findAncestorStateOfType<HomepageState>();
-                        homepageState?.setState(() => homepageState.myIndex = 2); // Back to ProfilePage
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                      ),
-                      child: const Text(
-                        "Back",
-                        style: TextStyle(color: Colors.white, fontSize: 16),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -281,5 +262,66 @@ class _UpdateAccountScreenState extends State<UpdateAccountScreen> {
         ),
       ),
     );
+  }
+
+  // Helper method to build text fields
+  Widget _buildTextField(TextEditingController controller, String label,
+      String hint, IconData icon) {
+    return TextFormField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        prefixIcon: Icon(icon, color: Colors.purple),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        focusedBorder: OutlineInputBorder(
+          borderSide: const BorderSide(color: Colors.purpleAccent, width: 2),
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+      keyboardType: label.contains("Username")
+          ? TextInputType.text
+          : TextInputType.number,
+      validator: (value) {
+        if (value == null || value.trim().isEmpty) {
+          return "Please enter your ${label.toLowerCase()}.";
+        }
+        if (!label.contains("Username") &&
+            (double.tryParse(value) == null || double.parse(value) <= 0)) {
+          return "Enter a valid positive number.";
+        }
+        return null;
+      },
+    );
+  }
+
+  // Helper method to build dropdown fields
+  Widget _buildDropdownField(String label, String value, List<String> items,
+      Function(String?) onChanged, IconData icon) {
+    return DropdownButtonFormField<String>(
+      value: value,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon, color: Colors.purple),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        focusedBorder: OutlineInputBorder(
+          borderSide: const BorderSide(color: Colors.purpleAccent, width: 2),
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+      items: items
+          .map((item) => DropdownMenuItem(value: item, child: Text(item)))
+          .toList(),
+      onChanged: onChanged,
+    );
+  }
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _heightController.dispose();
+    _weightController.dispose();
+    _ageController.dispose();
+    super.dispose();
   }
 }
