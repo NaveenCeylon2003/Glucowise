@@ -58,7 +58,7 @@ class _ProfilePageState extends State<ProfilePage> {
               ElevatedButton(
                 onPressed: () {
                   HomepageState? homepageState = context.findAncestorStateOfType<HomepageState>();
-                  homepageState?.setState(() => homepageState.myIndex = 11); // Navigate to SugarLimitPage
+                  homepageState?.setState(() => homepageState.myIndex = 6); // Navigate to SugarLimitPage
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blueAccent,
@@ -71,7 +71,7 @@ class _ProfilePageState extends State<ProfilePage> {
               ElevatedButton(
                 onPressed: () {
                   HomepageState? homepageState = context.findAncestorStateOfType<HomepageState>();
-                  homepageState?.setState(() => homepageState.myIndex = 6); // Update Account
+                  homepageState?.setState(() => homepageState.myIndex = 7); // Update Account
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blueAccent,
@@ -84,7 +84,7 @@ class _ProfilePageState extends State<ProfilePage> {
               ElevatedButton(
                 onPressed: () {
                   HomepageState? homepageState = context.findAncestorStateOfType<HomepageState>();
-                  homepageState?.setState(() => homepageState.myIndex = 7); // Change Email
+                  homepageState?.setState(() => homepageState.myIndex = 8); // Change Email
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blueAccent,
@@ -97,7 +97,7 @@ class _ProfilePageState extends State<ProfilePage> {
               ElevatedButton(
                 onPressed: () {
                   HomepageState? homepageState = context.findAncestorStateOfType<HomepageState>();
-                  homepageState?.setState(() => homepageState.myIndex = 8); // Logout
+                  homepageState?.setState(() => homepageState.myIndex = 9); // Logout
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.redAccent,

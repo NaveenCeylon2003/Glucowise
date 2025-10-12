@@ -37,6 +37,7 @@ void main() async {
     appId: "1:1072771865182:web:0e37dcb54597122523f2cf",
   )
   );
+
   runApp(const Sugartracking());
 }
 

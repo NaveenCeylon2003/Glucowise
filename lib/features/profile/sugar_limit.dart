@@ -79,8 +79,11 @@ class _SugarLimitPageState extends State<SugarLimitPage> {
         const SnackBar(content: Text("Sugar limit saved successfully!")),
       );
 
+      // Refresh Homepage state and data
       HomepageState? homepageState = context.findAncestorStateOfType<HomepageState>();
-      await homepageState?.refreshSugarData();
+      if (homepageState != null) {
+        await homepageState.refreshSugarData();
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error saving sugar limit: $e")),

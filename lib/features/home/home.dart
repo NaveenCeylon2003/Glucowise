@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:g21285878naveen/features/insights/insights.dart';
 import 'package:g21285878naveen/features/profile/profile.dart';
+import 'package:g21285878naveen/features/profile/sugar_limit.dart';
 import 'package:g21285878naveen/features/profile/update_account.dart';
 import 'package:g21285878naveen/features/profile/change_email.dart';
 import 'package:g21285878naveen/features/profile/logout.dart';
-import 'package:g21285878naveen/features/profile/notification_settings.dart';
-import 'package:g21285878naveen/features/profile/sugar_limit.dart';
 import 'package:g21285878naveen/features/scan/scan.dart';
 import 'package:g21285878naveen/features/scan/options.dart';
 import 'package:g21285878naveen/features/scan/barcode_entry.dart';
-import 'package:g21285878naveen/features/scan/food_search.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -55,7 +53,7 @@ class Homescreen extends StatelessWidget {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
             ),
-            child: const Text("Lets Scan", style: TextStyle(color: Colors.white)),
+            child: const Text("Let's Scan", style: TextStyle(color: Colors.white)),
           ),
           const SizedBox(height: 20),
           Text(
@@ -99,12 +97,10 @@ class HomepageState extends State<Homepage> {
     const Scanoptions(),            // 3: Scan Options
     const ScanPage(),              // 4: Scan Page
     const BarcodeEntryPage(),      // 5: Barcode Entry
-    const UpdateAccountScreen(),   // 6: Update Account
-    const ChangeEmailScreen(),     // 7: Change Email
-    const LogoutScreen(),          // 8: Logout
-    const NotificationSettingsScreen(), // 9: Notification Settings
-    const FoodSearchPage(),         // 10: Food Search Page
-    const SugarLimitPage(),         // 11: Sugar Limit Page (New)
+    const SugarLimitPage(),         // 6: Sugar Limit Page
+    const UpdateAccountScreen(),   // 7: Update Account
+    const ChangeEmailScreen(),     // 8: Change Email
+    const LogoutScreen(),          // 9: Logout
   ];
 
   @override
@@ -137,18 +133,8 @@ class HomepageState extends State<Homepage> {
             .collection('scanned_barcodes')
             .get();
 
-        QuerySnapshot searchDocs = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .collection('searched_foods')
-            .get();
-
         double total = 0.0;
         for (var doc in barcodeDocs.docs) {
-          final sugar = doc['sugarContent'];
-          if (sugar != null && sugar is num) total += sugar.toDouble();
-        }
-        for (var doc in searchDocs.docs) {
           final sugar = doc['sugarContent'];
           if (sugar != null && sugar is num) total += sugar.toDouble();
         }
@@ -197,7 +183,7 @@ class HomepageState extends State<Homepage> {
           : IndexedStack(index: myIndex, children: widgetList),
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: Colors.purple,
-        currentIndex: myIndex > 2 ? 0 : myIndex,
+        currentIndex: myIndex > 2 ? 0 : myIndex, // Only show Home, Insights, Profile in bar
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.add_chart), label: 'Insights'),

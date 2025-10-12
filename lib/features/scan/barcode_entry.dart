@@ -21,12 +21,10 @@ class _BarcodeEntryPageState extends State<BarcodeEntryPage> {
   final TextEditingController _amountConsumedController = TextEditingController();
   bool _isLoading = false;
 
-  // Load SharedPreferences instance
   Future<SharedPreferences> _getPrefs() async {
     return await SharedPreferences.getInstance();
   }
 
-  // Check and load cached data from SharedPreferences
   Future<Map<String, dynamic>?> _getCachedBarcodeData(String barcode) async {
     final prefs = await _getPrefs();
     final cachedData = prefs.getString(barcode);
@@ -36,7 +34,6 @@ class _BarcodeEntryPageState extends State<BarcodeEntryPage> {
     return null;
   }
 
-  // Save barcode data to SharedPreferences (only sugarPer100g and foodName)
   Future<void> _saveToSharedPreferences(String barcode, String foodName, double? sugarPer100g) async {
     final prefs = await _getPrefs();
     final data = {
@@ -46,7 +43,6 @@ class _BarcodeEntryPageState extends State<BarcodeEntryPage> {
     await prefs.setString(barcode, jsonEncode(data));
   }
 
-  // Save barcode data to Firestore
   Future<void> _saveToFirestore(String barcode, String foodName, double? sugarPer100g, double? sugarConsumed, double? amountConsumed) async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -70,6 +66,12 @@ class _BarcodeEntryPageState extends State<BarcodeEntryPage> {
         'amountConsumed': amountConsumed,
         'timestamp': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
+
+      // Update Homepage state and refresh data
+      HomepageState? homepageState = context.findAncestorStateOfType<HomepageState>();
+      if (homepageState != null) {
+        await homepageState.refreshSugarData(); // Refresh data immediately
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error saving to Firestore: $e")),
@@ -157,7 +159,6 @@ class _BarcodeEntryPageState extends State<BarcodeEntryPage> {
                       return;
                     }
 
-                    // Check local cache first
                     final cachedData = await _getCachedBarcodeData(barcode);
                     if (cachedData != null) {
                       setState(() {
@@ -171,14 +172,12 @@ class _BarcodeEntryPageState extends State<BarcodeEntryPage> {
                         }
                         _isLoading = false;
                       });
-                      // Save to Firestore even when using cached data
                       final sugarPer100g = cachedData['sugarPer100g'] as double?;
                       final sugarConsumed = sugarPer100g != null ? (sugarPer100g / 100) * amountConsumed : null;
                       await _saveToFirestore(barcode, _foodName, sugarPer100g, sugarConsumed, amountConsumed);
                       return;
                     }
 
-                    // Check connectivity for internet fetch
                     var connectivityResult = await Connectivity().checkConnectivity();
                     if (connectivityResult == ConnectivityResult.none) {
                       setState(() {
@@ -188,7 +187,6 @@ class _BarcodeEntryPageState extends State<BarcodeEntryPage> {
                       return;
                     }
 
-                    // Fetch from OpenFoodFacts API
                     String apiUrl = "https://world.openfoodfacts.org/api/v2/product/$barcode.json";
                     var response = await http.get(Uri.parse(apiUrl));
 
@@ -208,7 +206,6 @@ class _BarcodeEntryPageState extends State<BarcodeEntryPage> {
                           }
                         });
 
-                        // Calculate sugar consumed and save
                         double? sugarConsumed = sugarPer100g != null ? (sugarPer100g / 100) * amountConsumed : null;
                         await _saveToSharedPreferences(barcode, _foodName, sugarPer100g);
                         await _saveToFirestore(barcode, _foodName, sugarPer100g, sugarConsumed, amountConsumed);
